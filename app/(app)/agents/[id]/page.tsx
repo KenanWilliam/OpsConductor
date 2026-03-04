@@ -1,6 +1,6 @@
 "use client"
 
-import { use } from "react"
+import { use, useState } from "react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { agents, activityEvents } from "@/lib/mock-data"
@@ -46,6 +46,7 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
   const { id } = use(params)
   const agent = agents.find(a => a.id === id) || agents[0]
   const agentEvents = activityEvents.filter(e => e.agentId === agent.id)
+  const [agentStatus, setAgentStatus] = useState(agent.status)
 
   const approvalRules = [
     { action: "Send email", level: "Ask me" },
@@ -65,23 +66,23 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <StatusDot status={agent.status} />
+          <StatusDot status={agentStatus} />
           <div>
             <h1 className="text-xl font-semibold text-text-primary">{agent.name}</h1>
             <p className="text-[13px] text-text-secondary">{agent.role}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {agent.status === "running" ? (
-            <button className="flex items-center gap-1.5 rounded-md border border-border-base bg-surface-2 px-3 py-1.5 text-[13px] font-medium text-text-secondary transition-colors hover:text-text-primary">
+          {agentStatus === "running" ? (
+            <button onClick={() => setAgentStatus("paused")} className="flex items-center gap-1.5 rounded-md border border-border-base bg-surface-2 px-3 py-1.5 text-[13px] font-medium text-text-secondary transition-colors hover:text-text-primary">
               <Pause className="h-3.5 w-3.5" /> Pause
             </button>
           ) : (
-            <button className="flex items-center gap-1.5 rounded-md bg-success px-3 py-1.5 text-[13px] font-medium text-white transition-colors hover:bg-success/90">
+            <button onClick={() => setAgentStatus("running")} className="flex items-center gap-1.5 rounded-md bg-success px-3 py-1.5 text-[13px] font-medium text-white transition-colors hover:bg-success/90">
               <Play className="h-3.5 w-3.5" /> Resume
             </button>
           )}
-          <button className="flex items-center gap-1.5 rounded-md border border-border-base bg-surface-2 px-3 py-1.5 text-[13px] font-medium text-text-secondary transition-colors hover:text-text-primary">
+          <button onClick={() => alert("Agent settings would open here.")} className="flex items-center gap-1.5 rounded-md border border-border-base bg-surface-2 px-3 py-1.5 text-[13px] font-medium text-text-secondary transition-colors hover:text-text-primary">
             <Settings className="h-3.5 w-3.5" /> Edit
           </button>
           <button className="rounded-md border border-border-base bg-surface-2 p-1.5 text-text-tertiary transition-colors hover:text-text-secondary">
@@ -107,11 +108,11 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
                 <span className="text-[11px] text-text-tertiary">Status</span>
                 <span className={cn(
                   "text-[11px] font-medium capitalize",
-                  agent.status === "running" ? "text-success" :
-                  agent.status === "error" ? "text-danger" :
-                  agent.status === "paused" ? "text-warning" : "text-text-tertiary"
+                  agentStatus === "running" ? "text-success" :
+                  agentStatus === "error" ? "text-danger" :
+                  agentStatus === "paused" ? "text-warning" : "text-text-tertiary"
                 )}>
-                  {agent.status}
+                  {agentStatus}
                 </span>
               </div>
               <div className="flex items-center justify-between">
@@ -148,7 +149,7 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
           <div className="rounded-lg border border-border-subtle bg-surface-1 p-4">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-[13px] font-semibold text-text-primary">Approval Rules</h3>
-              <button className="text-[11px] text-indigo hover:text-indigo/80">Edit</button>
+              <button onClick={() => alert("Approval rules editor would open here.")} className="text-[11px] text-copper hover:text-copper-muted">Edit</button>
             </div>
             <div className="space-y-2">
               {approvalRules.map((rule) => (

@@ -29,8 +29,6 @@ const primaryNav = [
 
 const secondaryNav = [
   { label: "Settings", href: "/settings", icon: Settings },
-  { label: "Docs", href: "/docs", icon: FileText },
-  { label: "Changelog", href: "/changelog", icon: Newspaper },
 ]
 
 export function AppSidebar() {
@@ -49,7 +47,7 @@ export function AppSidebar() {
         "flex items-center gap-2 border-b border-border-subtle px-4 py-4",
         collapsed && "justify-center px-2"
       )}>
-        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-indigo text-primary-foreground">
+        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-copper text-primary-foreground">
           <LayoutDashboard className="h-4 w-4" />
         </div>
         {!collapsed && (

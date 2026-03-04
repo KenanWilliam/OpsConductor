@@ -39,7 +39,7 @@ function StatusBadge({ status }: { status: Approval["status"] }) {
   const config: Record<string, { icon: React.ElementType; color: string; label: string }> = {
     approved: { icon: CheckCircle2, color: "text-success", label: "Approved" },
     rejected: { icon: XCircle, color: "text-danger", label: "Rejected" },
-    "auto-executed": { icon: Zap, color: "text-indigo", label: "Auto-executed" },
+    "auto-executed": { icon: Zap, color: "text-copper", label: "Auto-executed" },
     pending: { icon: Clock, color: "text-warning", label: "Pending" },
   }
   const c = config[status]
@@ -59,7 +59,7 @@ const appIcons: Record<string, React.ElementType> = {
   Notion: FileText,
 }
 
-function ApprovalCard({ approval, showActions = false }: { approval: Approval; showActions?: boolean }) {
+function ApprovalCard({ approval, showActions = false, onAction }: { approval: Approval; showActions?: boolean; onAction?: (id: string, action: string) => void }) {
   const AppIcon = appIcons[approval.app] || FileText
 
   return (
@@ -102,15 +102,15 @@ function ApprovalCard({ approval, showActions = false }: { approval: Approval; s
         </div>
         {showActions && (
           <div className="flex items-center gap-1.5">
-            <button className="flex items-center gap-1.5 rounded-md bg-success px-3 py-1.5 text-[11px] font-semibold text-white transition-colors hover:bg-success/90">
+            <button onClick={() => onAction?.(approval.id, "approved")} className="flex items-center gap-1.5 rounded-md bg-success px-3 py-1.5 text-[11px] font-semibold text-white transition-colors hover:bg-success/90">
               <Check className="h-3.5 w-3.5" />
               Approve
             </button>
-            <button className="flex items-center gap-1.5 rounded-md border border-border-base bg-surface-2 px-3 py-1.5 text-[11px] font-semibold text-text-secondary transition-colors hover:text-text-primary">
+            <button onClick={() => onAction?.(approval.id, "edited")} className="flex items-center gap-1.5 rounded-md border border-border-base bg-surface-2 px-3 py-1.5 text-[11px] font-semibold text-text-secondary transition-colors hover:text-text-primary">
               <Pencil className="h-3.5 w-3.5" />
               Edit
             </button>
-            <button className="flex items-center gap-1.5 rounded-md border border-border-base bg-surface-2 px-3 py-1.5 text-[11px] font-semibold text-text-secondary transition-colors hover:text-text-primary">
+            <button onClick={() => onAction?.(approval.id, "skipped")} className="flex items-center gap-1.5 rounded-md border border-border-base bg-surface-2 px-3 py-1.5 text-[11px] font-semibold text-text-secondary transition-colors hover:text-text-primary">
               Skip
             </button>
           </div>
@@ -124,17 +124,22 @@ type TabKey = "pending" | "approved" | "rejected" | "auto-executed"
 
 export default function ApprovalsPage() {
   const [activeTab, setActiveTab] = useState<TabKey>("pending")
+  const [dismissed, setDismissed] = useState<Set<string>>(new Set())
 
   const allApprovals = [...pendingApprovals, ...recentApprovals]
   const tabs: { key: TabKey; label: string; count?: number }[] = [
-    { key: "pending", label: "Pending", count: pendingApprovals.length },
+    { key: "pending", label: "Pending", count: pendingApprovals.filter(a => !dismissed.has(a.id)).length },
     { key: "approved", label: "Approved" },
     { key: "rejected", label: "Rejected" },
     { key: "auto-executed", label: "Auto-executed" },
   ]
 
+  function handleAction(id: string, action: string) {
+    setDismissed(prev => new Set(prev).add(id))
+  }
+
   const filteredApprovals = activeTab === "pending"
-    ? pendingApprovals
+    ? pendingApprovals.filter(a => !dismissed.has(a.id))
     : allApprovals.filter(a => a.status === activeTab)
 
   return (
@@ -157,7 +162,7 @@ export default function ApprovalsPage() {
             className={cn(
               "flex items-center gap-1.5 border-b-2 px-3 pb-2.5 pt-1 text-[13px] font-medium transition-colors",
               activeTab === tab.key
-                ? "border-indigo text-text-primary"
+                ? "border-copper text-text-primary"
                 : "border-transparent text-text-tertiary hover:text-text-secondary"
             )}
           >
@@ -179,6 +184,7 @@ export default function ApprovalsPage() {
               key={approval.id}
               approval={approval}
               showActions={activeTab === "pending"}
+              onAction={handleAction}
             />
           ))
         ) : (

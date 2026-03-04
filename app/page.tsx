@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useState } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import {
   LayoutDashboard,
   Bot,
@@ -9,27 +9,112 @@ import {
   Zap,
   ArrowRight,
   Check,
-  Mail,
-  BarChart3,
-  CreditCard,
-  MessageSquare,
-  FileText,
   Activity,
   Eye,
   Workflow,
   ChevronRight,
   Menu,
   X,
+  CheckCircle,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
+/* ── Scroll-reveal hook ── */
+function useReveal() {
+  const ref = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(({ target, isIntersecting }) => {
+          if (isIntersecting) {
+            target.classList.add("in-view")
+            observer.unobserve(target)
+          }
+        })
+      },
+      { threshold: 0.12, rootMargin: "0px 0px -40px 0px" }
+    )
+    el.querySelectorAll("[data-reveal]").forEach((child) => observer.observe(child))
+    return () => observer.disconnect()
+  }, [])
+  return ref
+}
+
+/* ── Staggered word animation ── */
+function AnimatedHeadline() {
+  const lines = [
+    { words: ["One"], accent: null },
+    { words: ["cockpit."], accent: "cockpit." },
+    { words: ["Every"], accent: null },
+    { words: ["agent."], accent: null },
+    { words: ["Total"], accent: null },
+    { words: ["control."], accent: null },
+  ]
+
+  // Flatten: line1: "One cockpit." line2: "Every agent." line3: "Total control."
+  const line1 = [
+    { text: "One", isAccent: false },
+    { text: "cockpit.", isAccent: true },
+  ]
+  const line2 = [
+    { text: "Every", isAccent: false },
+    { text: "agent.", isAccent: false },
+  ]
+  const line3 = [
+    { text: "Total", isAccent: false },
+    { text: "control.", isAccent: false },
+  ]
+
+  const allLines = [line1, line2, line3]
+  let wordIndex = 0
+
+  return (
+    <h1 className="text-balance text-5xl font-extrabold leading-[1.08] tracking-[-0.04em] text-text-primary md:text-6xl lg:text-7xl">
+      {allLines.map((line, li) => (
+        <span key={li} className="block">
+          {line.map((word) => {
+            const delay = wordIndex * 60
+            wordIndex++
+            return (
+              <span
+                key={word.text}
+                className={cn("inline-block animate-word-in", word.isAccent && "accent-word")}
+                style={{ animationDelay: `${delay}ms` }}
+              >
+                {word.text}
+                {"\u00A0"}
+              </span>
+            )
+          })}
+        </span>
+      ))}
+    </h1>
+  )
+}
+
+/* ── Nav ── */
 function LandingNav() {
   const [open, setOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 80)
+    window.addEventListener("scroll", handleScroll, { passive: true })
+    return () => window.removeEventListener("scroll", handleScroll)
+  }, [])
+
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-[#ffffff08] bg-[#080809]/80 backdrop-blur-xl">
+    <nav
+      className={cn(
+        "fixed top-0 left-0 right-0 z-50 border-b border-transparent bg-transparent transition-all duration-300",
+        scrolled && "nav-scrolled"
+      )}
+    >
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
         <Link href="/" className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-indigo text-white">
+          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-copper text-[#080809]">
             <LayoutDashboard className="h-4 w-4" />
           </div>
           <span className="text-sm font-semibold text-text-primary">OpsConductor</span>
@@ -45,7 +130,7 @@ function LandingNav() {
           </Link>
           <Link
             href="/signup"
-            className="rounded-md bg-indigo px-4 py-2 text-[13px] font-semibold text-white shadow-[0_0_12px_rgba(99,102,241,0.25)] transition-all hover:bg-indigo/90 hover:shadow-[0_0_20px_rgba(99,102,241,0.35)]"
+            className="btn-primary rounded-md px-4 py-2 text-[13px] font-semibold"
           >
             Get started
           </Link>
@@ -55,114 +140,92 @@ function LandingNav() {
         </button>
       </div>
       {open && (
-        <div className="flex flex-col gap-4 border-t border-[#ffffff08] bg-[#080809] px-6 py-4 md:hidden">
+        <div className="flex flex-col gap-4 border-t border-[#1c1c20] bg-[#080809] px-6 py-4 md:hidden">
           <a href="#problem" className="text-[13px] text-text-secondary">Why</a>
           <a href="#how-it-works" className="text-[13px] text-text-secondary">How it works</a>
           <a href="#pricing" className="text-[13px] text-text-secondary">Pricing</a>
           <Link href="/login" className="text-[13px] text-text-secondary">Log in</Link>
-          <Link href="/signup" className="rounded-md bg-indigo px-4 py-2 text-center text-[13px] font-semibold text-white">Get started</Link>
+          <Link href="/signup" className="btn-primary rounded-md px-4 py-2 text-center text-[13px] font-semibold">Get started</Link>
         </div>
       )}
     </nav>
   )
 }
 
-function HeroSection() {
+/* ── Cockpit Mockup ── */
+function CockpitMockup() {
+  const [liveEvent, setLiveEvent] = useState(false)
+  const [approvalPulse, setApprovalPulse] = useState(false)
+
+  useEffect(() => {
+    const t1 = setTimeout(() => setLiveEvent(true), 3400)
+    const t2 = setTimeout(() => setApprovalPulse(true), 6000)
+    return () => { clearTimeout(t1); clearTimeout(t2) }
+  }, [])
+
   return (
-    <section className="relative flex flex-col items-center px-6 pt-32 pb-20 text-center md:pt-40 md:pb-28">
-      {/* Background grid */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div
-          className="absolute inset-0 opacity-[0.03]"
-          style={{
-            backgroundImage: "linear-gradient(#ffffff 1px, transparent 1px), linear-gradient(90deg, #ffffff 1px, transparent 1px)",
-            backgroundSize: "64px 64px",
-          }}
-        />
-        <div className="absolute left-1/2 top-1/3 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo/10 blur-[120px]" />
-      </div>
-
-      <div className="relative z-10 mx-auto max-w-4xl">
-        <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#ffffff08] bg-surface-1 px-3 py-1">
-          <div className="h-1.5 w-1.5 rounded-full bg-success status-running" />
-          <span className="text-[11px] font-medium text-text-secondary">Now in beta</span>
+    <div className="animate-mockup-in relative z-10 mx-auto mt-16 w-full max-w-5xl">
+      <div className="rounded-xl border border-[#1c1c20] bg-[#0f0f11] p-1 shadow-[0_8px_32px_rgba(0,0,0,0.6)]">
+        {/* Browser chrome */}
+        <div className="flex items-center gap-1.5 border-b border-[#1c1c20] px-3 py-2">
+          <div className="h-2.5 w-2.5 rounded-full bg-[#2A2A30]" />
+          <div className="h-2.5 w-2.5 rounded-full bg-[#2A2A30]" />
+          <div className="h-2.5 w-2.5 rounded-full bg-[#2A2A30]" />
+          <span className="ml-3 font-mono text-[11px] text-text-tertiary">opsconductor.app/cockpit</span>
         </div>
-        <h1 className="text-balance text-4xl font-bold leading-[1.1] tracking-[-0.03em] text-text-primary md:text-6xl lg:text-7xl">
-          The command center for<br className="hidden md:block" /> AI-powered operations
-        </h1>
-        <p className="mx-auto mt-5 max-w-xl text-pretty text-base leading-relaxed text-text-secondary md:text-lg">
-          Monitor, approve, and orchestrate your AI agents from one cockpit.
-          Your agents do the work. You keep control.
-        </p>
-        <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-          <Link
-            href="/signup"
-            className="flex items-center gap-2 rounded-md bg-indigo px-6 py-2.5 text-[13px] font-semibold text-white shadow-[0_0_16px_rgba(99,102,241,0.3)] transition-all hover:bg-indigo/90 hover:shadow-[0_0_24px_rgba(99,102,241,0.4)]"
-          >
-            Start for free <ArrowRight className="h-4 w-4" />
-          </Link>
-          <Link
-            href="/cockpit"
-            className="flex items-center gap-2 rounded-md border border-border-base bg-surface-2 px-6 py-2.5 text-[13px] font-semibold text-text-secondary transition-colors hover:text-text-primary"
-          >
-            View demo <ChevronRight className="h-4 w-4" />
-          </Link>
-        </div>
-      </div>
-
-      {/* Cockpit mockup */}
-      <div className="relative z-10 mx-auto mt-16 w-full max-w-5xl">
-        <div className="rounded-xl border border-border-subtle bg-surface-1 p-1 shadow-[0_8px_32px_rgba(0,0,0,0.6)]">
-          <div className="flex items-center gap-1.5 border-b border-border-subtle px-3 py-2">
-            <div className="h-2.5 w-2.5 rounded-full bg-[#27272a]" />
-            <div className="h-2.5 w-2.5 rounded-full bg-[#27272a]" />
-            <div className="h-2.5 w-2.5 rounded-full bg-[#27272a]" />
-            <span className="ml-3 font-mono text-[11px] text-text-tertiary">opsconductor.app/cockpit</span>
-          </div>
-          <div className="p-4">
-            {/* Mini stat cards */}
-            <div className="grid grid-cols-4 gap-2 mb-4">
-              {[
-                { label: "Actions This Week", value: "81", trend: "+12%", color: "text-success" },
-                { label: "Revenue Influenced", value: "$14,280", trend: "+8%", color: "text-success" },
-                { label: "Pending Approvals", value: "3", trend: "", color: "text-warning" },
-                { label: "Agent Cost", value: "$4.89", trend: "", color: "text-text-tertiary" },
-              ].map((stat) => (
-                <div key={stat.label} className="rounded-lg border border-border-subtle bg-surface-2 p-3">
-                  <p className="text-[10px] text-text-tertiary">{stat.label}</p>
-                  <div className="mt-1 flex items-center gap-1.5">
-                    <span className="text-sm font-semibold text-text-primary font-mono">{stat.value}</span>
-                    {stat.trend && <span className={cn("text-[10px] font-medium", stat.color)}>{stat.trend}</span>}
-                  </div>
-                </div>
-              ))}
-            </div>
-            {/* Mini activity lines */}
-            <div className="grid grid-cols-5 gap-3">
-              <div className="col-span-3 rounded-lg border border-border-subtle bg-surface-2 p-3">
-                <div className="mb-2 flex items-center justify-between">
-                  <span className="text-[10px] font-semibold text-text-primary">Live Activity</span>
-                  <div className="flex items-center gap-1">
-                    <div className="h-1.5 w-1.5 rounded-full bg-success status-running" />
-                    <span className="text-[9px] text-text-tertiary">Real-time</span>
-                  </div>
-                </div>
-                <div className="space-y-1.5">
-                  {[
-                    { agent: "Lead Nurturer", action: "Checked for new trial signups", time: "2m ago" },
-                    { agent: "Churn Rescue", action: "Detected MRR drop for Globex Inc", time: "12m ago" },
-                    { agent: "Lead Nurturer", action: "Sent follow-up email", time: "1h ago" },
-                  ].map((evt, i) => (
-                    <div key={i} className="flex items-center gap-2 rounded-md bg-[#0f0f11] px-2 py-1.5">
-                      <div className="h-1.5 w-1.5 rounded-full bg-success" />
-                      <span className="text-[10px] font-medium text-text-primary">{evt.agent}</span>
-                      <span className="flex-1 truncate text-[10px] text-text-tertiary">{evt.action}</span>
-                      <span className="font-mono text-[9px] text-text-tertiary">{evt.time}</span>
-                    </div>
-                  ))}
+        <div className="p-4">
+          {/* Mini stat cards */}
+          <div className="grid grid-cols-2 gap-2 mb-4 md:grid-cols-4">
+            {[
+              { label: "Actions This Week", value: "81", trend: "+12%", color: "text-success" },
+              { label: "Revenue Influenced", value: "$14,280", trend: "+8%", color: "text-success" },
+              { label: "Pending Approvals", value: "3", trend: "", color: "text-warning" },
+              { label: "Agent Cost", value: "$4.89", trend: "", color: "text-text-tertiary" },
+            ].map((stat) => (
+              <div key={stat.label} className="rounded-lg border border-[#1c1c20] bg-[#161618] p-3">
+                <p className="text-[10px] text-text-tertiary">{stat.label}</p>
+                <div className="mt-1 flex items-center gap-1.5">
+                  <span className="text-sm font-semibold text-text-primary font-mono">{stat.value}</span>
+                  {stat.trend && <span className={cn("text-[10px] font-medium", stat.color)}>{stat.trend}</span>}
                 </div>
               </div>
-              <div className="col-span-2 rounded-lg border border-border-subtle bg-surface-2 p-3">
+            ))}
+          </div>
+          {/* Activity feed + agents */}
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-5">
+            <div className="md:col-span-3 rounded-lg border border-[#1c1c20] bg-[#161618] p-3">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-[10px] font-semibold text-text-primary">Live Activity</span>
+                <div className="flex items-center gap-1">
+                  <div className="h-1.5 w-1.5 rounded-full bg-success status-running" />
+                  <span className="text-[9px] text-text-tertiary">Real-time</span>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                {liveEvent && (
+                  <div className="animate-event-flash flex items-center gap-2 rounded-md bg-[#0f0f11] px-2 py-1.5">
+                    <div className="h-1.5 w-1.5 rounded-full bg-success" />
+                    <span className="text-[10px] font-medium text-text-primary">Lead Nurturer</span>
+                    <span className="flex-1 truncate text-[10px] text-text-tertiary">Follow-up sent to Priya Sharma</span>
+                    <span className="font-mono text-[9px] text-text-tertiary">just now</span>
+                  </div>
+                )}
+                {[
+                  { agent: "Lead Nurturer", action: "Checked for new trial signups", time: "2m ago" },
+                  { agent: "Churn Rescue", action: "Detected MRR drop for Globex Inc", time: "12m ago" },
+                  { agent: "Lead Nurturer", action: "Sent follow-up email", time: "1h ago" },
+                ].map((evt, i) => (
+                  <div key={i} className="flex items-center gap-2 rounded-md bg-[#0f0f11] px-2 py-1.5">
+                    <div className="h-1.5 w-1.5 rounded-full bg-success" />
+                    <span className="text-[10px] font-medium text-text-primary">{evt.agent}</span>
+                    <span className="flex-1 truncate text-[10px] text-text-tertiary">{evt.action}</span>
+                    <span className="font-mono text-[9px] text-text-tertiary">{evt.time}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="md:col-span-2 space-y-3">
+              <div className="rounded-lg border border-[#1c1c20] bg-[#161618] p-3">
                 <span className="text-[10px] font-semibold text-text-primary">Agent Status</span>
                 <div className="mt-2 space-y-1.5">
                   {[
@@ -173,33 +236,92 @@ function HeroSection() {
                     <div key={a.name} className="flex items-center gap-2 rounded-md bg-[#0f0f11] px-2 py-1.5">
                       <div className={cn(
                         "h-1.5 w-1.5 rounded-full",
-                        a.status === "running" ? "bg-success" : "bg-[#27272a]"
+                        a.status === "running" ? "bg-success" : "bg-[#2A2A30]"
                       )} />
                       <span className="text-[10px] text-text-primary">{a.name}</span>
                     </div>
                   ))}
                 </div>
               </div>
+              {/* Approval card */}
+              <div className={cn(
+                "rounded-lg border bg-[#161618] p-3 transition-all",
+                approvalPulse ? "approval-pulse border-warning" : "border-[#1c1c20]"
+              )}>
+                <div className="flex items-center gap-1.5 mb-2">
+                  <ShieldCheck className="h-3 w-3 text-warning" />
+                  <span className="text-[10px] font-semibold text-warning">Pending Approval</span>
+                </div>
+                <p className="text-[10px] text-text-secondary">Churn Rescue wants to offer 15% discount to Globex Inc</p>
+                <div className="mt-2 flex gap-1.5">
+                  <button className="rounded bg-success/20 px-2 py-0.5 text-[9px] font-medium text-success">Approve</button>
+                  <button className="rounded bg-danger/20 px-2 py-0.5 text-[9px] font-medium text-danger">Reject</button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
+    </div>
+  )
+}
+
+/* ── Hero ── */
+function HeroSection() {
+  return (
+    <section className="relative flex flex-col items-center px-6 pt-32 pb-20 text-center md:pt-40 md:pb-28 overflow-hidden">
+      {/* Subtle top gradient glow */}
+      <div className="pointer-events-none absolute -top-32 left-1/2 -translate-x-1/2 h-[500px] w-[900px] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(242,107,58,0.06)_0%,transparent_65%)]" />
+
+      <div className="relative z-10 mx-auto max-w-4xl">
+        <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#1c1c20] bg-[#0f0f11] px-3 py-1">
+          <div className="h-1.5 w-1.5 rounded-full bg-success status-running" />
+          <span className="text-[11px] font-medium text-text-secondary">Now in beta</span>
+        </div>
+
+        <AnimatedHeadline />
+
+        <p className="mx-auto mt-6 max-w-xl text-pretty text-lg leading-[1.7] text-text-secondary">
+          Monitor, approve, and orchestrate your AI agents from one cockpit.
+          Your agents do the work. You keep control.
+        </p>
+        <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+          <Link
+            href="/signup"
+            className="btn-primary flex items-center gap-2 rounded-md px-6 py-2.5 text-[13px] font-semibold"
+          >
+            Start for free <ArrowRight className="h-4 w-4" />
+          </Link>
+          <Link
+            href="/cockpit"
+            className="flex items-center gap-2 rounded-md border border-[#26262c] bg-[#161618] px-6 py-2.5 text-[13px] font-semibold text-text-secondary transition-colors hover:text-text-primary"
+          >
+            View demo <ChevronRight className="h-4 w-4" />
+          </Link>
+        </div>
+      </div>
+
+      <CockpitMockup />
     </section>
   )
 }
 
+/* ── Problem Section ── */
 function ProblemSection() {
+  const ref = useReveal()
   return (
-    <section id="problem" className="mx-auto max-w-4xl px-6 py-24 text-center">
-      <h2 className="text-balance text-2xl font-bold tracking-[-0.02em] text-text-primary md:text-3xl">
-        96% of operators don&apos;t trust their AI agents
-      </h2>
-      <p className="mx-auto mt-4 max-w-2xl text-pretty text-base leading-relaxed text-text-secondary">
-        You built AI agents to save time. But now you spend your time wondering what they did,
-        whether they sent the right email, or if they just offered a 20% discount to the wrong customer.
-        The problem isn&apos;t AI. The problem is control.
-      </p>
-      <div className="mt-12 grid gap-4 md:grid-cols-3">
+    <section id="problem" className="mx-auto max-w-4xl px-6 py-24 text-center" ref={ref}>
+      <div data-reveal>
+        <h2 className="text-balance text-2xl font-bold tracking-[-0.02em] text-text-primary md:text-3xl lg:text-4xl">
+          96% of operators don&apos;t trust their AI agents
+        </h2>
+        <p className="mx-auto mt-4 max-w-2xl text-pretty text-base leading-relaxed text-text-secondary">
+          You built AI agents to save time. But now you spend your time wondering what they did,
+          whether they sent the right email, or if they just offered a 20% discount to the wrong customer.
+          The problem isn&apos;t AI. The problem is control.
+        </p>
+      </div>
+      <div className="mt-12 grid gap-4 md:grid-cols-3" data-reveal data-reveal-group>
         {[
           {
             icon: Eye,
@@ -214,10 +336,10 @@ function ProblemSection() {
           {
             icon: Activity,
             title: "No accountability",
-            description: "You can't trace why an agent took an action. No reasoning logs, no audit trail.",
+            description: "You can\u2019t trace why an agent took an action. No reasoning logs, no audit trail.",
           },
         ].map((item) => (
-          <div key={item.title} className="flex flex-col items-center gap-3 rounded-lg border border-border-subtle bg-surface-1 p-6">
+          <div key={item.title} className="flex flex-col items-center gap-3 rounded-lg border border-[#1c1c20] bg-[#0f0f11] p-6">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-danger/10">
               <item.icon className="h-5 w-5 text-danger" />
             </div>
@@ -230,7 +352,9 @@ function ProblemSection() {
   )
 }
 
+/* ── How It Works ── */
 function HowItWorksSection() {
+  const ref = useReveal()
   const steps = [
     {
       step: "01",
@@ -259,26 +383,26 @@ function HowItWorksSection() {
   ]
 
   return (
-    <section id="how-it-works" className="mx-auto max-w-5xl px-6 py-24">
-      <div className="text-center">
-        <h2 className="text-balance text-2xl font-bold tracking-[-0.02em] text-text-primary md:text-3xl">
+    <section id="how-it-works" className="mx-auto max-w-5xl px-6 py-24" ref={ref}>
+      <div className="text-center" data-reveal>
+        <h2 className="text-balance text-2xl font-bold tracking-[-0.02em] text-text-primary md:text-3xl lg:text-4xl">
           How OpsConductor works
         </h2>
         <p className="mx-auto mt-3 max-w-lg text-pretty text-[15px] text-text-secondary">
           From zero to full AI operations in under 10 minutes.
         </p>
       </div>
-      <div className="mt-14 grid gap-6 md:grid-cols-2">
+      <div className="mt-14 grid gap-6 md:grid-cols-2" data-reveal data-reveal-group>
         {steps.map((item) => (
           <div
             key={item.step}
-            className="group flex gap-4 rounded-lg border border-border-subtle bg-surface-1 p-5 transition-colors hover:border-border-base"
+            className="group flex gap-4 rounded-lg border border-[#1c1c20] bg-[#0f0f11] p-5 transition-colors hover:border-[#26262c]"
           >
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-dim text-indigo">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-copper-dim text-copper">
               <item.icon className="h-5 w-5" />
             </div>
             <div className="flex flex-col gap-1">
-              <span className="font-mono text-[11px] text-indigo">{item.step}</span>
+              <span className="font-mono text-[11px] text-copper">{item.step}</span>
               <h3 className="text-[15px] font-semibold text-text-primary">{item.title}</h3>
               <p className="text-[13px] leading-relaxed text-text-tertiary">{item.description}</p>
             </div>
@@ -289,7 +413,9 @@ function HowItWorksSection() {
   )
 }
 
+/* ── Pricing ── */
 function PricingSection() {
+  const ref = useReveal()
   const plans = [
     {
       name: "Free",
@@ -304,7 +430,7 @@ function PricingSection() {
         "7-day activity log",
       ],
       cta: "Start free",
-      ctaStyle: "border border-border-base bg-surface-2 text-text-primary hover:bg-surface-3",
+      href: "/signup",
       highlight: false,
     },
     {
@@ -321,7 +447,7 @@ function PricingSection() {
         "Priority support",
       ],
       cta: "Start free trial",
-      ctaStyle: "bg-indigo text-white shadow-[0_0_12px_rgba(99,102,241,0.25)] hover:shadow-[0_0_20px_rgba(99,102,241,0.35)]",
+      href: "/signup",
       highlight: true,
     },
     {
@@ -340,34 +466,34 @@ function PricingSection() {
         "Audit log",
       ],
       cta: "Talk to us",
-      ctaStyle: "border border-border-base bg-surface-2 text-text-primary hover:bg-surface-3",
+      href: "/signup",
       highlight: false,
     },
   ]
 
   return (
-    <section id="pricing" className="mx-auto max-w-5xl px-6 py-24">
-      <div className="text-center">
-        <h2 className="text-balance text-2xl font-bold tracking-[-0.02em] text-text-primary md:text-3xl">
+    <section id="pricing" className="mx-auto max-w-5xl px-6 py-24" ref={ref}>
+      <div className="text-center" data-reveal>
+        <h2 className="text-balance text-2xl font-bold tracking-[-0.02em] text-text-primary md:text-3xl lg:text-4xl">
           Simple, transparent pricing
         </h2>
         <p className="mx-auto mt-3 max-w-lg text-pretty text-[15px] text-text-secondary">
           Start free. Upgrade when your agents prove their value.
         </p>
       </div>
-      <div className="mt-12 grid gap-4 md:grid-cols-3">
+      <div className="mt-12 grid gap-4 md:grid-cols-3" data-reveal data-reveal-group>
         {plans.map((plan) => (
           <div
             key={plan.name}
             className={cn(
-              "flex flex-col rounded-xl border p-6 transition-colors",
+              "flex flex-col rounded-xl border p-6 transition-all",
               plan.highlight
-                ? "border-indigo bg-surface-1 shadow-[0_0_32px_rgba(99,102,241,0.08)]"
+                ? "border-copper/40 bg-surface-1 shadow-[0_0_40px_rgba(242,107,58,0.08)] md:scale-[1.03]"
                 : "border-border-subtle bg-surface-1"
             )}
           >
             {plan.highlight && (
-              <span className="mb-3 inline-flex self-start items-center rounded-full bg-indigo-dim px-2.5 py-0.5 text-[11px] font-medium text-indigo">
+              <span className="mb-3 inline-flex self-start items-center rounded-full bg-copper-dim px-2.5 py-0.5 text-[11px] font-medium text-copper">
                 Most popular
               </span>
             )}
@@ -385,14 +511,17 @@ function PricingSection() {
                 </li>
               ))}
             </ul>
-            <button
+            <Link
+              href={plan.href}
               className={cn(
-                "mt-6 w-full rounded-md px-4 py-2.5 text-[13px] font-semibold transition-all",
-                plan.ctaStyle
+                "mt-6 block w-full rounded-md px-4 py-2.5 text-center text-[13px] font-semibold transition-all",
+                plan.highlight
+                  ? "btn-primary"
+                  : "border border-[#26262c] bg-[#161618] text-text-primary hover:bg-[#1e1e22]"
               )}
             >
               {plan.cta}
-            </button>
+            </Link>
           </div>
         ))}
       </div>
@@ -400,26 +529,48 @@ function PricingSection() {
   )
 }
 
+/* ── CTA / Waitlist ── */
 function WaitlistSection() {
+  const ref = useReveal()
+  const [email, setEmail] = useState("")
+  const [submitted, setSubmitted] = useState(false)
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!email) return
+    setSubmitted(true)
+  }
+
   return (
-    <section className="mx-auto max-w-3xl px-6 py-24 text-center">
-      <div className="rounded-xl border border-border-subtle bg-surface-1 p-10 md:p-16">
-        <h2 className="text-balance text-2xl font-bold tracking-[-0.02em] text-text-primary md:text-3xl">
+    <section className="cta-glow mx-auto max-w-3xl px-6 py-24 text-center" ref={ref}>
+      <div className="relative z-10 rounded-xl border border-border-subtle bg-surface-1 p-10 md:p-16" data-reveal>
+        <h2 className="text-balance text-2xl font-bold tracking-[-0.02em] text-text-primary md:text-3xl lg:text-4xl">
           Ready to take control?
         </h2>
         <p className="mx-auto mt-3 max-w-md text-pretty text-[15px] text-text-secondary">
           Join the beta and be the first to orchestrate your AI agents with confidence.
         </p>
-        <div className="mx-auto mt-8 flex max-w-sm flex-col gap-3 sm:flex-row">
-          <input
-            type="email"
-            placeholder="you@company.com"
-            className="h-10 flex-1 rounded-md border border-border-base bg-surface-2 px-3 text-[13px] text-text-primary placeholder:text-text-tertiary focus:border-indigo focus:shadow-[0_0_0_3px_rgba(99,102,241,0.12)] focus:outline-none"
-          />
-          <button className="h-10 rounded-md bg-indigo px-6 text-[13px] font-semibold text-white shadow-[0_0_12px_rgba(99,102,241,0.25)] transition-all hover:bg-indigo/90 hover:shadow-[0_0_20px_rgba(99,102,241,0.35)]">
-            Join waitlist
-          </button>
-        </div>
+        {submitted ? (
+          <div className="mx-auto mt-8 flex max-w-sm flex-col items-center gap-2">
+            <CheckCircle className="h-8 w-8 text-success" />
+            <p className="text-[15px] font-medium text-text-primary">You&apos;re on the list!</p>
+            <p className="text-[13px] text-text-secondary">We&apos;ll reach out when your seat is ready.</p>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="mx-auto mt-8 flex max-w-sm flex-col gap-3 sm:flex-row">
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@company.com"
+              className="h-10 flex-1 rounded-md border border-border-base bg-surface-2 px-3 text-[13px] text-text-primary placeholder:text-text-tertiary focus:border-copper focus:shadow-[0_0_0_3px_rgba(242,107,58,0.12)] focus:outline-none"
+            />
+            <button type="submit" className="btn-primary h-10 rounded-md px-6 text-[13px] font-semibold">
+              Join waitlist
+            </button>
+          </form>
+        )}
         <p className="mt-4 text-[11px] text-text-tertiary">
           Free during beta. No credit card required.
         </p>
@@ -428,12 +579,13 @@ function WaitlistSection() {
   )
 }
 
+/* ── Footer ── */
 function LandingFooter() {
   return (
-    <footer className="border-t border-border-subtle px-6 py-8">
+    <footer className="border-t border-[#1c1c20] px-6 py-8">
       <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 md:flex-row">
         <div className="flex items-center gap-2">
-          <div className="flex h-6 w-6 items-center justify-center rounded-md bg-indigo text-white">
+          <div className="flex h-6 w-6 items-center justify-center rounded-md bg-copper text-[#080809]">
             <LayoutDashboard className="h-3.5 w-3.5" />
           </div>
           <span className="text-[13px] font-semibold text-text-secondary">OpsConductor</span>
@@ -451,7 +603,7 @@ function LandingFooter() {
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[#080809]">
       <LandingNav />
       <HeroSection />
       <ProblemSection />

@@ -21,7 +21,7 @@ function Sparkline({ data }: { data: number[] }) {
         strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"
-        className="text-indigo"
+        className="text-copper"
       />
     </svg>
   )

@@ -26,6 +26,16 @@ const settingsSections = [
 
 export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState("general")
+  const [saved, setSaved] = useState(false)
+  const [notifications, setNotifications] = useState([
+    { label: "Approval needed", description: "When an agent needs your approval", enabled: true },
+    { label: "Agent failed", description: "When an agent encounters an error", enabled: true },
+    { label: "Weekly summary", description: "Weekly digest of all agent activity", enabled: false },
+  ])
+
+  function toggleNotification(index: number) {
+    setNotifications(prev => prev.map((n, i) => i === index ? { ...n, enabled: !n.enabled } : n))
+  }
 
   return (
     <div className="flex h-full">
@@ -68,20 +78,20 @@ export default function SettingsPage() {
                 <input
                   type="text"
                   defaultValue="Acme Operations"
-                  className="h-9 w-full rounded-md border border-border-base bg-surface-1 px-3 text-[13px] text-text-primary focus:border-indigo focus:shadow-[0_0_0_3px_rgba(99,102,241,0.12)] focus:outline-none"
+                  className="h-9 w-full rounded-md border border-border-base bg-surface-1 px-3 text-[13px] text-text-primary focus:border-copper focus:shadow-[0_0_0_3px_var(--color-accent-dim)] focus:outline-none"
                 />
               </div>
               <div>
                 <label className="mb-1.5 block text-[11px] font-medium text-text-secondary">Timezone</label>
-                <select className="h-9 w-full rounded-md border border-border-base bg-surface-1 px-3 text-[13px] text-text-primary focus:border-indigo focus:outline-none">
+                <select className="h-9 w-full rounded-md border border-border-base bg-surface-1 px-3 text-[13px] text-text-primary focus:border-copper focus:outline-none">
                   <option>America/New_York (EST)</option>
                   <option>America/Los_Angeles (PST)</option>
                   <option>Europe/London (GMT)</option>
                   <option>Asia/Tokyo (JST)</option>
                 </select>
               </div>
-              <button className="rounded-md bg-indigo px-4 py-2 text-[13px] font-semibold text-white transition-all hover:bg-indigo/90">
-                Save Changes
+              <button onClick={() => { setSaved(true); setTimeout(() => setSaved(false), 2000) }} className="rounded-md bg-copper px-4 py-2 text-[13px] font-semibold text-white transition-all hover:bg-copper-muted">
+                {saved ? "Saved ✓" : "Save Changes"}
               </button>
             </div>
           </div>
@@ -94,7 +104,7 @@ export default function SettingsPage() {
                 <h2 className="text-lg font-semibold text-text-primary">Members</h2>
                 <p className="text-[13px] text-text-secondary">Manage who has access to this workspace</p>
               </div>
-              <button className="rounded-md bg-indigo px-4 py-2 text-[13px] font-semibold text-white transition-all hover:bg-indigo/90">
+              <button onClick={() => alert("Invite link copied to clipboard!")} className="rounded-md bg-copper px-4 py-2 text-[13px] font-semibold text-white transition-all hover:bg-copper-muted">
                 Invite Member
               </button>
             </div>
@@ -113,7 +123,7 @@ export default function SettingsPage() {
                   <tr className="hover:bg-surface-3">
                     <td className="px-3 py-3 text-[13px] font-medium text-text-primary">Jane Doe</td>
                     <td className="px-3 py-3 text-[13px] text-text-secondary">jane@acme.com</td>
-                    <td className="px-3 py-3"><span className="rounded bg-indigo-dim px-1.5 py-0.5 text-[11px] font-medium text-indigo">Admin</span></td>
+                    <td className="px-3 py-3"><span className="rounded bg-copper-dim px-1.5 py-0.5 text-[11px] font-medium text-copper">Admin</span></td>
                     <td className="px-3 py-3 font-mono text-[11px] text-text-tertiary">Just now</td>
                   </tr>
                   <tr className="hover:bg-surface-3">
@@ -132,13 +142,13 @@ export default function SettingsPage() {
           <div className="max-w-lg">
             <h2 className="text-lg font-semibold text-text-primary">Billing</h2>
             <p className="mb-6 text-[13px] text-text-secondary">Manage your plan and billing</p>
-            <div className="rounded-lg border border-indigo bg-indigo-dim p-4">
+            <div className="rounded-lg border border-copper bg-copper-dim p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-[13px] font-semibold text-text-primary">Operator Plan</p>
                   <p className="text-[11px] text-text-secondary">$49/mo -- 10 agents, unlimited events</p>
                 </div>
-                <button className="rounded-md border border-border-base bg-surface-2 px-3 py-1.5 text-[11px] font-medium text-text-secondary hover:text-text-primary">
+                <button onClick={() => alert("Redirecting to billing portal...")} className="rounded-md border border-border-base bg-surface-2 px-3 py-1.5 text-[11px] font-medium text-text-secondary hover:text-text-primary">
                   Manage Plan
                 </button>
               </div>
@@ -170,25 +180,24 @@ export default function SettingsPage() {
             <h2 className="text-lg font-semibold text-text-primary">Notifications</h2>
             <p className="mb-6 text-[13px] text-text-secondary">Configure when and how you receive notifications</p>
             <div className="space-y-3">
-              {[
-                { label: "Approval needed", description: "When an agent needs your approval", enabled: true },
-                { label: "Agent failed", description: "When an agent encounters an error", enabled: true },
-                { label: "Weekly summary", description: "Weekly digest of all agent activity", enabled: false },
-              ].map((pref) => (
+              {notifications.map((pref, index) => (
                 <div key={pref.label} className="flex items-center justify-between rounded-md border border-border-subtle bg-surface-1 px-3 py-3">
                   <div>
                     <p className="text-[13px] font-medium text-text-primary">{pref.label}</p>
                     <p className="text-[11px] text-text-tertiary">{pref.description}</p>
                   </div>
-                  <div className={cn(
-                    "h-5 w-9 rounded-full transition-colors relative cursor-pointer",
-                    pref.enabled ? "bg-indigo" : "bg-surface-3"
-                  )}>
+                  <button
+                    onClick={() => toggleNotification(index)}
+                    className={cn(
+                      "h-5 w-9 rounded-full transition-colors relative cursor-pointer",
+                      pref.enabled ? "bg-copper" : "bg-surface-3"
+                    )}
+                  >
                     <div className={cn(
                       "absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform",
                       pref.enabled ? "translate-x-4" : "translate-x-0.5"
                     )} />
-                  </div>
+                  </button>
                 </div>
               ))}
             </div>
@@ -203,7 +212,7 @@ export default function SettingsPage() {
               <div className="rounded-lg border border-border-subtle bg-surface-1 p-4">
                 <h3 className="mb-2 text-[13px] font-semibold text-text-primary">API Keys</h3>
                 <p className="mb-3 text-[11px] text-text-tertiary">Generate keys for programmatic access</p>
-                <button className="rounded-md bg-indigo px-3 py-1.5 text-[11px] font-semibold text-white transition-all hover:bg-indigo/90">
+                <button onClick={() => alert("API Key: ops_sk_demo_" + Math.random().toString(36).slice(2, 14))} className="rounded-md bg-copper px-3 py-1.5 text-[11px] font-semibold text-white transition-all hover:bg-copper-muted">
                   Generate New Key
                 </button>
               </div>
@@ -227,14 +236,14 @@ export default function SettingsPage() {
               <div className="rounded-lg border border-danger/30 bg-danger/5 p-4">
                 <h3 className="text-[13px] font-semibold text-text-primary">Transfer Ownership</h3>
                 <p className="mb-3 text-[11px] text-text-tertiary">Transfer this workspace to another member</p>
-                <button className="rounded-md border border-danger bg-danger/10 px-3 py-1.5 text-[11px] font-semibold text-danger hover:bg-danger/20">
+                <button onClick={() => { if (confirm("Are you sure you want to transfer workspace ownership?")) alert("Transfer initiated.") }} className="rounded-md border border-danger bg-danger/10 px-3 py-1.5 text-[11px] font-semibold text-danger hover:bg-danger/20">
                   Transfer Workspace
                 </button>
               </div>
               <div className="rounded-lg border border-danger/30 bg-danger/5 p-4">
                 <h3 className="text-[13px] font-semibold text-text-primary">Delete Workspace</h3>
                 <p className="mb-3 text-[11px] text-text-tertiary">Permanently delete this workspace and all data</p>
-                <button className="rounded-md bg-danger px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-danger/90">
+                <button onClick={() => { if (confirm("This action is irreversible. Delete this workspace and all data?")) alert("Workspace deleted.") }} className="rounded-md bg-danger px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-danger/90">
                   Delete Workspace
                 </button>
               </div>

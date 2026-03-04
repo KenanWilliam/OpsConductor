@@ -57,7 +57,7 @@ function Sparkline({ data }: { data: number[] }) {
   }).join(" ")
   return (
     <svg width="48" height="18" viewBox="0 0 48 18" className="overflow-visible">
-      <polyline points={points} fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-indigo" />
+      <polyline points={points} fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-copper" />
     </svg>
   )
 }
@@ -93,10 +93,10 @@ export default function AgentsPage() {
           <h1 className="text-xl font-semibold text-text-primary">Agents</h1>
           <p className="text-[13px] text-text-secondary">{agents.length} agents configured</p>
         </div>
-        <button className="flex items-center gap-2 rounded-md bg-indigo px-4 py-2 text-[13px] font-semibold text-white shadow-[0_0_12px_rgba(99,102,241,0.25)] transition-all hover:bg-indigo/90 hover:shadow-[0_0_20px_rgba(99,102,241,0.35)]">
+        <Link href="/workflows" className="flex items-center gap-2 rounded-md bg-copper px-4 py-2 text-[13px] font-semibold text-white shadow-[0_0_12px_var(--color-accent-glow)] transition-all hover:bg-copper-muted hover:shadow-[0_0_20px_var(--color-accent-glow)]">
           <Plus className="h-4 w-4" />
           New Agent
-        </button>
+        </Link>
       </div>
 
       {/* Toolbar */}
@@ -165,7 +165,7 @@ export default function AgentsPage() {
                     </div>
                   </td>
                   <td className="px-3 py-3">
-                    <Link href={`/agents/${agent.id}`} className="text-[13px] font-medium text-text-primary hover:text-indigo">
+                    <Link href={`/agents/${agent.id}`} className="text-[13px] font-medium text-text-primary hover:text-copper">
                       {agent.name}
                     </Link>
                   </td>

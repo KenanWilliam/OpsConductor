@@ -1,3 +1,5 @@
+"use client"
+
 import { Workflow, Calendar } from "lucide-react"
 
 export default function WorkflowsPage() {
@@ -15,7 +17,7 @@ export default function WorkflowsPage() {
       {/* Header */}
       <div>
         <div className="flex items-center gap-2">
-          <Workflow className="h-5 w-5 text-indigo" />
+          <Workflow className="h-5 w-5 text-copper" />
           <h1 className="text-xl font-semibold text-text-primary">Workflows</h1>
         </div>
         <p className="text-[13px] text-text-secondary">Pre-built and custom workflow templates for your agents</p>
@@ -24,7 +26,7 @@ export default function WorkflowsPage() {
       {/* Coming soon banner */}
       <div className="flex items-center justify-between rounded-lg border border-border-subtle bg-surface-1 px-4 py-3">
         <div className="flex items-center gap-2">
-          <Calendar className="h-4 w-4 text-indigo" />
+          <Calendar className="h-4 w-4 text-copper" />
           <span className="text-[13px] text-text-secondary">Visual workflow builder shipping <span className="font-medium text-text-primary">Q2 2026</span></span>
         </div>
       </div>
@@ -35,8 +37,8 @@ export default function WorkflowsPage() {
         <div className="grid grid-cols-3 gap-3">
           {templates.map((template) => (
             <div key={template.name} className="flex flex-col gap-3 rounded-lg border border-border-subtle bg-surface-1 p-4 transition-colors hover:border-border-base">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-dim">
-                <Workflow className="h-4 w-4 text-indigo" />
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-copper-dim">
+                <Workflow className="h-4 w-4 text-copper" />
               </div>
               <div>
                 <h4 className="text-[13px] font-semibold text-text-primary">{template.name}</h4>
@@ -50,7 +52,7 @@ export default function WorkflowsPage() {
                 </div>
                 <span className="font-mono text-[11px] text-success">{template.timeSaved}</span>
               </div>
-              <button className="rounded-md bg-indigo px-3 py-1.5 text-[11px] font-semibold text-white transition-all hover:bg-indigo/90 hover:shadow-[0_0_12px_rgba(99,102,241,0.25)]">
+              <button onClick={() => alert(`\"${template.name}\" template activated! A new agent will be created from this template.`)} className="rounded-md bg-copper px-3 py-1.5 text-[11px] font-semibold text-white transition-all hover:bg-copper-muted hover:shadow-[0_0_12px_var(--color-accent-glow)]">
                 Use Template
               </button>
             </div>

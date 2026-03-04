@@ -21,11 +21,7 @@ export default function SignupPage() {
       {/* Background grid */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div
-          className="absolute inset-0 opacity-[0.02]"
-          style={{
-            backgroundImage: "linear-gradient(#ffffff 1px, transparent 1px), linear-gradient(90deg, #ffffff 1px, transparent 1px)",
-            backgroundSize: "64px 64px",
-          }}
+          className="absolute inset-0 opacity-[0.02] bg-[linear-gradient(#ffffff_1px,transparent_1px),linear-gradient(90deg,#ffffff_1px,transparent_1px)] bg-[size:64px_64px]"
         />
       </div>
 
@@ -33,7 +29,7 @@ export default function SignupPage() {
         {/* Logo */}
         <div className="mb-8 flex flex-col items-center gap-3">
           <Link href="/" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-indigo text-white">
+            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-copper text-[#080809]">
               <LayoutDashboard className="h-4.5 w-4.5" />
             </div>
             <span className="text-base font-semibold text-text-primary">OpsConductor</span>
@@ -81,7 +77,7 @@ export default function SignupPage() {
                 value={workspace}
                 onChange={(e) => setWorkspace(e.target.value)}
                 placeholder="Acme Operations"
-                className="h-10 w-full rounded-md border border-border-base bg-surface-1 pl-9 pr-3 text-[13px] text-text-primary placeholder:text-text-tertiary focus:border-indigo focus:shadow-[0_0_0_3px_rgba(99,102,241,0.12)] focus:outline-none"
+                className="h-10 w-full rounded-md border border-border-base bg-surface-1 pl-9 pr-3 text-[13px] text-text-primary placeholder:text-text-tertiary focus:border-copper focus:shadow-[0_0_0_3px_rgba(242,107,58,0.12)] focus:outline-none"
               />
             </div>
           </div>
@@ -97,7 +93,7 @@ export default function SignupPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@company.com"
-                className="h-10 w-full rounded-md border border-border-base bg-surface-1 pl-9 pr-3 text-[13px] text-text-primary placeholder:text-text-tertiary focus:border-indigo focus:shadow-[0_0_0_3px_rgba(99,102,241,0.12)] focus:outline-none"
+                className="h-10 w-full rounded-md border border-border-base bg-surface-1 pl-9 pr-3 text-[13px] text-text-primary placeholder:text-text-tertiary focus:border-copper focus:shadow-[0_0_0_3px_rgba(242,107,58,0.12)] focus:outline-none"
               />
             </div>
           </div>
@@ -113,13 +109,13 @@ export default function SignupPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Create a password"
-                className="h-10 w-full rounded-md border border-border-base bg-surface-1 pl-9 pr-3 text-[13px] text-text-primary placeholder:text-text-tertiary focus:border-indigo focus:shadow-[0_0_0_3px_rgba(99,102,241,0.12)] focus:outline-none"
+                className="h-10 w-full rounded-md border border-border-base bg-surface-1 pl-9 pr-3 text-[13px] text-text-primary placeholder:text-text-tertiary focus:border-copper focus:shadow-[0_0_0_3px_rgba(242,107,58,0.12)] focus:outline-none"
               />
             </div>
           </div>
           <button
             type="submit"
-            className="mt-1 flex h-10 items-center justify-center gap-2 rounded-md bg-indigo text-[13px] font-semibold text-white shadow-[0_0_12px_rgba(99,102,241,0.25)] transition-all hover:bg-indigo/90 hover:shadow-[0_0_20px_rgba(99,102,241,0.35)]"
+            className="mt-1 flex h-10 items-center justify-center gap-2 rounded-md btn-primary text-[13px] font-semibold text-white transition-all"
           >
             Create workspace <ArrowRight className="h-4 w-4" />
           </button>
@@ -127,7 +123,7 @@ export default function SignupPage() {
 
         <p className="mt-5 text-center text-[13px] text-text-tertiary">
           Already have an account?{" "}
-          <Link href="/login" className="font-medium text-indigo transition-colors hover:text-indigo/80">
+          <Link href="/login" className="font-medium text-copper transition-colors hover:text-copper-muted">
             Sign in
           </Link>
         </p>

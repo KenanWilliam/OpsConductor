@@ -38,9 +38,16 @@ function ConnectionStatusDot({ status }: { status?: string }) {
 
 export default function IntegrationsPage() {
   const [activeTab, setActiveTab] = useState<"connected" | "available">("connected")
+  const [integrationState, setIntegrationState] = useState(integrations)
 
-  const connected = integrations.filter(i => i.connected)
-  const available = integrations.filter(i => !i.connected)
+  const connected = integrationState.filter(i => i.connected)
+  const available = integrationState.filter(i => !i.connected)
+
+  function toggleConnection(id: string) {
+    setIntegrationState(prev => prev.map(i =>
+      i.id === id ? { ...i, connected: !i.connected, status: i.connected ? undefined : "live" } : i
+    ))
+  }
 
   const categories = Array.from(new Set(available.map(i => i.category)))
 
@@ -49,20 +56,20 @@ export default function IntegrationsPage() {
       {/* Header */}
       <div>
         <div className="flex items-center gap-2">
-          <Plug className="h-5 w-5 text-indigo" />
+          <Plug className="h-5 w-5 text-copper" />
           <h1 className="text-xl font-semibold text-text-primary">Integrations</h1>
         </div>
         <p className="text-[13px] text-text-secondary">Connect your tools to power your AI agents</p>
       </div>
 
       {/* MCP banner */}
-      <div className="flex items-center justify-between rounded-lg border border-indigo-dim bg-indigo-dim px-4 py-3">
+      <div className="flex items-center justify-between rounded-lg border border-copper-dim bg-copper-dim px-4 py-3">
         <div className="flex items-center gap-2">
-          <div className="h-2 w-2 rounded-full bg-indigo status-running" />
+          <div className="h-2 w-2 rounded-full bg-copper status-running" />
           <span className="text-[13px] font-medium text-text-primary">Powered by MCP Protocol</span>
           <span className="text-[13px] text-text-secondary">-- 10,000+ integrations available</span>
         </div>
-        <button className="flex items-center gap-1 text-[11px] font-medium text-indigo hover:text-indigo/80">
+        <button onClick={() => alert("Request submitted! We'll notify you when it's available.")} className="flex items-center gap-1 text-[11px] font-medium text-copper hover:text-copper-muted">
           Request integration <ExternalLink className="h-3 w-3" />
         </button>
       </div>
@@ -76,7 +83,7 @@ export default function IntegrationsPage() {
             className={cn(
               "border-b-2 px-3 pb-2.5 pt-1 text-[13px] font-medium capitalize transition-colors",
               activeTab === tab
-                ? "border-indigo text-text-primary"
+                ? "border-copper text-text-primary"
                 : "border-transparent text-text-tertiary hover:text-text-secondary"
             )}
           >
@@ -110,11 +117,11 @@ export default function IntegrationsPage() {
                 </div>
                 <div className="flex items-center gap-1.5 pt-1 border-t border-border-subtle">
                   {integration.status === "expiring" ? (
-                    <button className="flex items-center gap-1 rounded-md bg-warning/10 px-2.5 py-1.5 text-[11px] font-medium text-warning hover:bg-warning/20">
+                    <button onClick={() => toggleConnection(integration.id)} className="flex items-center gap-1 rounded-md bg-warning/10 px-2.5 py-1.5 text-[11px] font-medium text-warning hover:bg-warning/20">
                       <AlertTriangle className="h-3 w-3" /> Reconnect
                     </button>
                   ) : (
-                    <button className="rounded-md px-2.5 py-1.5 text-[11px] font-medium text-text-tertiary hover:text-text-secondary">
+                    <button onClick={() => toggleConnection(integration.id)} className="rounded-md px-2.5 py-1.5 text-[11px] font-medium text-text-tertiary hover:text-text-secondary">
                       Disconnect
                     </button>
                   )}
@@ -142,7 +149,7 @@ export default function IntegrationsPage() {
                         </div>
                         <p className="text-[13px] font-medium text-text-primary">{integration.name}</p>
                       </div>
-                      <button className="rounded-md bg-indigo px-3 py-1.5 text-[11px] font-semibold text-white transition-all hover:bg-indigo/90 hover:shadow-[0_0_12px_rgba(99,102,241,0.25)]">
+                      <button onClick={() => toggleConnection(integration.id)} className="rounded-md bg-copper px-3 py-1.5 text-[11px] font-semibold text-white transition-all hover:bg-copper-muted hover:shadow-[0_0_12px_var(--color-accent-glow)]">
                         Connect
                       </button>
                     </div>
