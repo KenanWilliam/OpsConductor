@@ -226,7 +226,7 @@ export default function ActivityPage() {
                       selectedEvent?.id === evt.id ? "bg-amber/5" : "hover:bg-surface-2/50"
                     )}>
                     <td className="py-2.5 px-4">
-                      <IntegrationLogo provider={evt.integration} size={16} />
+                      {evt.integration && <IntegrationLogo provider={evt.integration} size={16} />}
                     </td>
                     <td className="py-2.5 px-4 text-text-primary truncate max-w-[300px]">{evt.title || evt.type}</td>
                     <td className="py-2.5 px-4 text-text-secondary">{evt.agent_name || '—'}</td>
@@ -238,7 +238,7 @@ export default function ActivityPage() {
                         "bg-surface-2 text-text-tertiary"
                       )}>{evt.status}</span>
                     </td>
-                    <td className="py-2.5 px-4"><RiskBadge level={evt.risk_level} /></td>
+                    <td className="py-2.5 px-4">{evt.risk_level && <RiskBadge level={evt.risk_level} />}</td>
                     <td className="py-2.5 px-4 text-text-tertiary"><TimeAgo date={evt.created_at} /></td>
                   </tr>
                 ))}
@@ -270,7 +270,7 @@ export default function ActivityPage() {
               <div className="flex justify-between"><span className="text-text-tertiary">Agent</span><span className="text-text-primary">{selectedEvent.agent_name || '—'}</span></div>
               <div className="flex justify-between"><span className="text-text-tertiary">Integration</span><span className="text-text-primary capitalize">{selectedEvent.integration || '—'}</span></div>
               <div className="flex justify-between"><span className="text-text-tertiary">Status</span><span className="text-text-primary">{selectedEvent.status}</span></div>
-              <div className="flex justify-between"><span className="text-text-tertiary">Risk</span><RiskBadge level={selectedEvent.risk_level} /></div>
+              <div className="flex justify-between"><span className="text-text-tertiary">Risk</span>{selectedEvent.risk_level ? <RiskBadge level={selectedEvent.risk_level} /> : <span className="text-text-primary">—</span>}</div>
               <div className="flex justify-between"><span className="text-text-tertiary">Created</span><span className="text-text-primary"><TimeAgo date={selectedEvent.created_at} /></span></div>
               {selectedEvent.cost_usd && <div className="flex justify-between"><span className="text-text-tertiary">Cost</span><span className="text-text-primary">${selectedEvent.cost_usd.toFixed(4)}</span></div>}
             </div>

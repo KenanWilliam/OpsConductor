@@ -263,7 +263,7 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
                   <div key={run.id} className="flex items-center justify-between py-2 text-[13px]">
                     <div className="flex items-center gap-2">
                       <span className={cn("h-2 w-2 rounded-full",
-                        run.status === 'success' ? "bg-success" : run.status === 'error' ? "bg-red-400" : run.status === 'running' ? "bg-amber animate-pulse" : "bg-text-tertiary"
+                        run.status === 'success' ? "bg-success" : run.status === 'failed' ? "bg-red-400" : run.status === 'running' ? "bg-amber animate-pulse" : "bg-text-tertiary"
                       )} />
                       <span className="text-text-primary capitalize">{run.status}</span>
                       <span className="text-text-tertiary capitalize">• {run.triggered_by}</span>
@@ -303,9 +303,9 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
                 <tr key={run.id} className="border-b border-border-subtle last:border-0 hover:bg-surface-2/50 transition-colors">
                   <td className="py-2.5 px-4">
                     <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium",
-                      run.status === 'success' ? "bg-success/10 text-success" : run.status === 'error' ? "bg-red-400/10 text-red-400" : run.status === 'running' ? "bg-amber/10 text-amber" : "bg-surface-2 text-text-tertiary"
+                      run.status === 'success' ? "bg-success/10 text-success" : run.status === 'failed' ? "bg-red-400/10 text-red-400" : run.status === 'running' ? "bg-amber/10 text-amber" : "bg-surface-2 text-text-tertiary"
                     )}>
-                      <span className={cn("h-1.5 w-1.5 rounded-full", run.status === 'success' ? "bg-success" : run.status === 'error' ? "bg-red-400" : run.status === 'running' ? "bg-amber" : "bg-text-tertiary")} />
+                      <span className={cn("h-1.5 w-1.5 rounded-full", run.status === 'success' ? "bg-success" : run.status === 'failed' ? "bg-red-400" : run.status === 'running' ? "bg-amber" : "bg-text-tertiary")} />
                       {run.status}
                     </span>
                   </td>
@@ -331,9 +331,9 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
                 <div key={evt.id} className="flex items-start justify-between gap-4 p-4 hover:bg-surface-2/50 transition-colors">
                   <div className="flex flex-col gap-1 min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <IntegrationLogo provider={evt.integration} size={16} />
+                      {evt.integration && <IntegrationLogo provider={evt.integration} size={16} />}
                       <span className="text-[13px] font-medium text-text-primary truncate">{evt.title || evt.type}</span>
-                      <RiskBadge level={evt.risk_level} />
+                      {evt.risk_level && <RiskBadge level={evt.risk_level} />}
                     </div>
                     {evt.payload && <div className="mt-1"><JsonViewer data={evt.payload} /></div>}
                   </div>

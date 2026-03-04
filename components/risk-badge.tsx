@@ -9,7 +9,8 @@ const riskStyles = {
   critical: 'bg-danger/10 text-danger border-danger/20 animate-pulse',
 }
 
-export function RiskBadge({ level }: { level: string }) {
+export function RiskBadge({ level }: { level: string | null | undefined }) {
+  if (!level) return null
   const style = riskStyles[level as keyof typeof riskStyles] || riskStyles.low
   return (
     <span className={cn(

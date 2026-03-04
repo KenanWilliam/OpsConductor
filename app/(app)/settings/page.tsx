@@ -195,17 +195,8 @@ export default function SettingsPage() {
                   )}>
                     {workspace?.plan || 'free'}
                   </span>
-                  <span className="text-[11px] text-text-tertiary">
-                    {workspace?.agent_limit ? `${workspace.agent_limit} agent limit` : 'Unlimited agents'}
-                  </span>
                 </div>
               </div>
-              {workspace?.monthly_cost_limit_usd && (
-                <div>
-                  <label className="mb-1.5 block text-[11px] font-medium text-text-secondary">Monthly Cost Limit</label>
-                  <span className="text-[13px] text-text-primary font-mono">${workspace.monthly_cost_limit_usd}</span>
-                </div>
-              )}
             </fieldset>
 
             <div className="flex items-center gap-3">
