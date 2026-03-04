@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Mail, Lock, ArrowRight, Loader2, Wand2 } from "lucide-react"
 import Image from "next/image"
 import { cn } from "@/lib/utils"
@@ -16,6 +16,13 @@ export default function LoginPage() {
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
 
   const supabase = createClient()
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) router.replace("/cockpit")
+    })
+  }, [])
 
   async function handleGoogleLogin() {
     setLoading(true)
