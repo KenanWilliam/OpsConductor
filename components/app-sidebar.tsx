@@ -74,7 +74,7 @@ function UserPopover({ onClose }: { onClose: () => void }) {
     >
       {/* Identity */}
       <div className="mb-3 flex items-center gap-2.5">
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-cyan/20 text-xs font-semibold text-cyan">
+        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber/20 text-xs font-semibold text-amber">
           {getUserDisplayInfo(user).initials}
         </div>
         <div className="flex flex-col">
@@ -91,7 +91,7 @@ function UserPopover({ onClose }: { onClose: () => void }) {
         </div>
         <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-3">
           <div
-            className="h-full rounded-full bg-cyan transition-all duration-500"
+            className="h-full rounded-full bg-amber transition-all duration-500"
             style={{ width: `${pct}%` }}
           />
         </div>
@@ -99,7 +99,7 @@ function UserPopover({ onClose }: { onClose: () => void }) {
           <span className="font-mono text-[10px] text-text-tertiary">
             {used.toLocaleString()} / {limit.toLocaleString()}
           </span>
-          <span className="text-[10px] text-cyan">Operator Plan</span>
+          <span className="text-[10px] text-amber">Operator Plan</span>
         </div>
       </div>
 
@@ -165,9 +165,13 @@ export function AppSidebar() {
         "flex items-center gap-2 border-b border-border-subtle px-4 py-4",
         collapsed && "justify-center px-2"
       )}>
-        <img src="/icon.svg" alt="OpsConductor" className="h-7 w-7 shrink-0" />
+        <img src="/icon.svg" alt="OpsConductor" className="h-7 w-7 shrink-0 hidden dark:block" />
+        <img src="/icon-light.svg" alt="OpsConductor" className="h-7 w-7 shrink-0 dark:hidden block" />
         {!collapsed && (
-          <img src="/brand/wordmark.svg" alt="OpsConductor" className="h-[22px]" />
+          <>
+            <img src="/brand/wordmark.svg" alt="OpsConductor" className="h-[22px] hidden dark:block" />
+            <img src="/brand/wordmark-dark.svg" alt="OpsConductor" className="h-[22px] dark:hidden block" />
+          </>
         )}
       </div>
 
@@ -271,7 +275,7 @@ export function AppSidebar() {
             collapsed && "justify-center px-2"
           )}
         >
-          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-cyan/20 text-[11px] font-semibold text-cyan">
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-amber/20 text-[11px] font-semibold text-amber">
             {initials}
           </div>
           {!collapsed && (

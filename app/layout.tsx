@@ -1,26 +1,39 @@
 import type { Metadata } from 'next'
-import { Geist, Geist_Mono } from 'next/font/google'
+import { Bricolage_Grotesque, IBM_Plex_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { ThemeProvider } from '@/components/theme-provider'
 import './globals.css'
 
-const _geist = Geist({ subsets: ["latin"] });
-const _geistMono = Geist_Mono({ subsets: ["latin"] });
+const bricolage = Bricolage_Grotesque({
+  subsets: ["latin"],
+  variable: "--font-bricolage",
+  display: "swap",
+});
+
+const ibmPlexMono = IBM_Plex_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-ibm-plex-mono",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: 'OpsConductor — AI Agent Command Center',
   description: 'The command center for AI-powered business operations. Monitor, approve, and orchestrate your AI agents from one cockpit.',
-  generator: 'v0.app',
+  metadataBase: new URL('https://opsconductor.kenanwilliam.dev'),
+  openGraph: {
+    title: 'OpsConductor — AI Agent Command Center',
+    description: 'Your agents run. You stay in control. The command center for AI agent orchestration.',
+    siteName: 'OpsConductor',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'OpsConductor — AI Agent Command Center',
+    description: 'Your agents run. You stay in control.',
+  },
   icons: {
     icon: [
-      {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
-      },
       {
         url: '/icon.svg',
         type: 'image/svg+xml',
@@ -32,7 +45,7 @@ export const metadata: Metadata = {
         media: '(prefers-color-scheme: light)',
       },
     ],
-    apple: '/apple-icon.png',
+    apple: '/favicon.svg',
   },
 }
 
@@ -43,7 +56,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="font-sans antialiased" suppressHydrationWarning>
+      <body className={`${bricolage.variable} ${ibmPlexMono.variable} font-sans antialiased`} suppressHydrationWarning>
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"

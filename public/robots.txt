@@ -1,0 +1,14 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /auth/
+Disallow: /cockpit
+Disallow: /agents
+Disallow: /approvals
+Disallow: /activity
+Disallow: /integrations
+Disallow: /settings
+Disallow: /workflows
+
+Sitemap: https://opsconductor.kenanwilliam.dev/sitemap.xml

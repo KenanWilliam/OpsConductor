@@ -184,7 +184,7 @@ export function CommandPalette() {
                         <span className="text-[11px] text-[var(--color-text-tertiary)]">{cmd.description}</span>
                       )}
                     </div>
-                    {idx === selectedIndex && <ArrowRight className="h-3.5 w-3.5 text-[var(--color-accent-cyan)]" />}
+                    {idx === selectedIndex && <ArrowRight className="h-3.5 w-3.5 text-[var(--color-accent-amber)]" />}
                   </button>
                 )
               })}

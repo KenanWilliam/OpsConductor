@@ -120,7 +120,7 @@ export function NotificationBell() {
       >
         <Bell className="h-4 w-4 text-text-secondary" />
         {unreadCount > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-cyan px-1 text-[10px] font-bold text-[#07070A]">
+          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-amber px-1 text-[10px] font-bold text-[#07070A]">
             {unreadCount}
           </span>
         )}
@@ -141,7 +141,7 @@ export function NotificationBell() {
                 {unreadCount > 0 && (
                   <button
                     onClick={markAllRead}
-                    className="flex items-center gap-1 text-[11px] font-medium text-cyan transition-colors hover:text-cyan-hover"
+                    className="flex items-center gap-1 text-[11px] font-medium text-amber transition-colors hover:text-amber-hover"
                   >
                     <Check className="h-3 w-3" />
                     Mark all read
@@ -178,7 +178,7 @@ export function NotificationBell() {
                       <div className="flex items-center gap-2">
                         <span className="text-[13px] font-medium text-text-primary">{notification.agentName}</span>
                         {!notification.read && (
-                          <span className="h-1.5 w-1.5 rounded-full bg-cyan" />
+                          <span className="h-1.5 w-1.5 rounded-full bg-amber" />
                         )}
                       </div>
                       <p className="text-[12px] leading-relaxed text-text-secondary">{notification.action}</p>

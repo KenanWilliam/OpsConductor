@@ -39,20 +39,20 @@ export default function IntegrationsPage() {
       {/* Header */}
       <div>
         <div className="flex items-center gap-2">
-          <Plug className="h-5 w-5 text-cyan" />
+          <Plug className="h-5 w-5 text-amber" />
           <h1 className="text-xl font-semibold text-text-primary">Integrations</h1>
         </div>
         <p className="text-[13px] text-text-secondary">Connect your tools to power your AI agents</p>
       </div>
 
       {/* MCP banner */}
-      <div className="flex items-center justify-between rounded-lg border border-cyan-dim bg-cyan-dim px-4 py-3">
+      <div className="flex items-center justify-between rounded-lg border border-amber-dim bg-amber-dim px-4 py-3">
         <div className="flex items-center gap-2">
-          <div className="h-2 w-2 rounded-full bg-cyan status-running" />
+          <div className="h-2 w-2 rounded-full bg-amber status-running" />
           <span className="text-[13px] font-medium text-text-primary">Powered by MCP Protocol</span>
           <span className="text-[13px] text-text-secondary">-- 10,000+ integrations available</span>
         </div>
-        <button onClick={() => alert("Request submitted! We'll notify you when it's available.")} className="flex items-center gap-1 text-[11px] font-medium text-cyan hover:text-cyan-muted">
+        <button onClick={() => alert("Request submitted! We'll notify you when it's available.")} className="flex items-center gap-1 text-[11px] font-medium text-amber hover:text-amber-hover">
           Request integration <ExternalLink className="h-3 w-3" />
         </button>
       </div>
@@ -66,7 +66,7 @@ export default function IntegrationsPage() {
             className={cn(
               "border-b-2 px-3 pb-2.5 pt-1 text-[13px] font-medium capitalize transition-colors",
               activeTab === tab
-                ? "border-cyan text-text-primary"
+                ? "border-amber text-text-primary"
                 : "border-transparent text-text-tertiary hover:text-text-secondary"
             )}
           >
@@ -127,7 +127,7 @@ export default function IntegrationsPage() {
                         </div>
                         <p className="text-[13px] font-medium text-text-primary">{integration.name}</p>
                       </div>
-                      <button onClick={() => toggleConnection(integration.id)} className="rounded-md bg-cyan px-3 py-1.5 text-[11px] font-semibold text-primary-foreground transition-colors hover:bg-cyan-muted">
+                      <button onClick={() => toggleConnection(integration.id)} className="rounded-md bg-amber px-3 py-1.5 text-[11px] font-semibold text-primary-foreground transition-colors hover:bg-amber-hover">
                         Connect
                       </button>
                     </div>

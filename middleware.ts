@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-const publicPaths = ['/login', '/signup', '/auth/callback']
+const publicPaths = ['/login', '/signup', '/auth/callback', '/demo']
 const protectedPaths = [
   '/cockpit', '/agents', '/approvals',
   '/integrations', '/settings', '/activity', '/workflows',

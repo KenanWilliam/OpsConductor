@@ -42,7 +42,7 @@ function Sparkline({ data }: { data: number[] }) {
   }).join(" ")
   return (
     <svg width="48" height="18" viewBox="0 0 48 18" className="overflow-visible">
-      <polyline points={points} fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-cyan" />
+      <polyline points={points} fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-amber" />
     </svg>
   )
 }
@@ -75,7 +75,7 @@ export default function AgentsPage() {
           <h1 className="text-xl font-semibold text-text-primary">Agents</h1>
           <p className="text-[13px] text-text-secondary">{agents.length} agents configured</p>
         </div>
-        <Link href="/workflows" className="flex items-center gap-2 rounded-md bg-cyan px-4 py-2 text-[13px] font-semibold text-primary-foreground transition-colors hover:bg-cyan-muted">
+        <Link href="/workflows" className="flex items-center gap-2 rounded-md bg-amber px-4 py-2 text-[13px] font-semibold text-primary-foreground transition-colors hover:bg-amber-hover">
           <Plus className="h-4 w-4" />
           New Agent
         </Link>
@@ -147,7 +147,7 @@ export default function AgentsPage() {
                     </div>
                   </td>
                   <td className="px-3 py-3">
-                    <Link href={`/agents/${agent.id}`} className="text-[13px] font-medium text-text-primary hover:text-cyan">
+                    <Link href={`/agents/${agent.id}`} className="text-[13px] font-medium text-text-primary hover:text-amber">
                       {agent.name}
                     </Link>
                   </td>

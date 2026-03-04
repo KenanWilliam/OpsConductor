@@ -23,7 +23,21 @@ export async function GET(request: Request) {
       }
     )
     const { error } = await supabase.auth.exchangeCodeForSession(code)
-    if (!error) return NextResponse.redirect(`${origin}${next}`)
+    if (!error) {
+      // Ensure the user has a workspace (fixes auth dead-end)
+      try {
+        await fetch(`${origin}/api/workspace/provision`, {
+          method: 'POST',
+          headers: {
+            cookie: cookieStore.getAll().map(c => `${c.name}=${c.value}`).join('; '),
+          },
+        })
+      } catch (e) {
+        // Non-fatal — workspace provisioning may not be available yet
+        console.error('Workspace provisioning failed:', e)
+      }
+      return NextResponse.redirect(`${origin}${next}`)
+    }
   }
 
   return NextResponse.redirect(`${origin}/login?error=auth_failed`)

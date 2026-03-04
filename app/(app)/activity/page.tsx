@@ -22,7 +22,7 @@ import {
 const appIcons: Record<string, { icon: React.ElementType; color: string }> = {
   Gmail: { icon: Mail, color: "text-danger" },
   HubSpot: { icon: BarChart3, color: "text-warning" },
-  Stripe: { icon: CreditCard, color: "text-cyan" },
+  Stripe: { icon: CreditCard, color: "text-amber" },
   Slack: { icon: MessageSquare, color: "text-info" },
   Notion: { icon: FileText, color: "text-text-secondary" },
 }
@@ -32,7 +32,7 @@ function StatusChip({ status }: { status: string }) {
     success: "bg-success/10 text-success",
     failed: "bg-danger/10 text-danger",
     pending: "bg-warning/10 text-warning",
-    running: "bg-cyan-dim text-cyan",
+    running: "bg-amber-dim text-amber",
   }
   return (
     <span className={cn(
@@ -99,7 +99,7 @@ export default function ActivityPage() {
         <div className="flex items-center justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <Activity className="h-5 w-5 text-cyan" />
+              <Activity className="h-5 w-5 text-amber" />
               <h1 className="text-xl font-semibold text-text-primary">Activity Log</h1>
             </div>
             <p className="text-[13px] text-text-secondary">Complete record of all agent actions</p>
@@ -110,7 +110,7 @@ export default function ActivityPage() {
               className={cn(
                 "flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-[13px] font-medium transition-colors",
                 showInsights
-                  ? "border-cyan bg-cyan-dim text-cyan"
+                  ? "border-amber bg-amber-dim text-amber"
                   : "border-border-base bg-surface-2 text-text-secondary hover:text-text-primary"
               )}
             >
@@ -145,7 +145,7 @@ export default function ActivityPage() {
               placeholder="Search actions, agents, targets..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-9 w-full rounded-md border border-border-base bg-surface-1 pl-8 pr-3 text-[13px] text-text-primary placeholder:text-text-tertiary focus:border-cyan focus:shadow-[0_0_0_3px_var(--color-accent-dim)] focus:outline-none"
+              className="h-9 w-full rounded-md border border-border-base bg-surface-1 pl-8 pr-3 text-[13px] text-text-primary placeholder:text-text-tertiary focus:border-amber focus:shadow-[0_0_0_3px_var(--color-accent-dim)] focus:outline-none"
             />
           </div>
           <div className="flex items-center gap-1 rounded-md border border-border-subtle bg-surface-1 p-0.5">

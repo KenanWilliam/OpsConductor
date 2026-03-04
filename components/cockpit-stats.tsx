@@ -58,7 +58,7 @@ export function CockpitStats() {
         trend={12}
         trendLabel="vs last week"
         icon={Zap}
-        accentColor="text-cyan"
+        accentColor="text-amber"
       />
       <StatCard
         label="Revenue Influenced"

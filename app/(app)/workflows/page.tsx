@@ -17,7 +17,7 @@ export default function WorkflowsPage() {
       {/* Header */}
       <div>
         <div className="flex items-center gap-2">
-          <Workflow className="h-5 w-5 text-cyan" />
+          <Workflow className="h-5 w-5 text-amber" />
           <h1 className="text-xl font-semibold text-text-primary">Workflows</h1>
         </div>
         <p className="text-[13px] text-text-secondary">Pre-built and custom workflow templates for your agents</p>
@@ -26,7 +26,7 @@ export default function WorkflowsPage() {
       {/* Coming soon banner */}
       <div className="flex items-center justify-between rounded-lg border border-border-subtle bg-surface-1 px-4 py-3">
         <div className="flex items-center gap-2">
-          <Calendar className="h-4 w-4 text-cyan" />
+          <Calendar className="h-4 w-4 text-amber" />
           <span className="text-[13px] text-text-secondary">Visual workflow builder shipping <span className="font-medium text-text-primary">Q2 2026</span></span>
         </div>
       </div>
@@ -37,8 +37,8 @@ export default function WorkflowsPage() {
         <div className="grid grid-cols-3 gap-3">
           {templates.map((template) => (
             <div key={template.name} className="flex flex-col gap-3 rounded-lg border border-border-subtle bg-surface-1 p-4 transition-colors hover:border-border-base">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-cyan-dim">
-                <Workflow className="h-4 w-4 text-cyan" />
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-dim">
+                <Workflow className="h-4 w-4 text-amber" />
               </div>
               <div>
                 <h4 className="text-[13px] font-semibold text-text-primary">{template.name}</h4>
@@ -52,7 +52,7 @@ export default function WorkflowsPage() {
                 </div>
                 <span className="font-mono text-[11px] text-success">{template.timeSaved}</span>
               </div>
-              <button onClick={() => alert(`\"${template.name}\" template activated! A new agent will be created from this template.`)} className="rounded-md bg-cyan px-3 py-1.5 text-[11px] font-semibold text-primary-foreground transition-colors hover:bg-cyan-muted">
+              <button onClick={() => alert(`\"${template.name}\" template activated! A new agent will be created from this template.`)} className="rounded-md bg-amber px-3 py-1.5 text-[11px] font-semibold text-primary-foreground transition-colors hover:bg-amber-hover">
                 Use Template
               </button>
             </div>

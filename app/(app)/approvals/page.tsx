@@ -40,7 +40,7 @@ function StatusBadge({ status }: { status: Approval["status"] }) {
   const config: Record<string, { icon: React.ElementType; color: string; label: string }> = {
     approved: { icon: CheckCircle2, color: "text-success", label: "Approved" },
     rejected: { icon: XCircle, color: "text-danger", label: "Rejected" },
-    "auto-executed": { icon: Zap, color: "text-cyan", label: "Auto-executed" },
+    "auto-executed": { icon: Zap, color: "text-amber", label: "Auto-executed" },
     pending: { icon: Clock, color: "text-warning", label: "Pending" },
   }
   const c = config[status]
@@ -163,7 +163,7 @@ export default function ApprovalsPage() {
             className={cn(
               "flex items-center gap-1.5 border-b-2 px-3 pb-2.5 pt-1 text-[13px] font-medium transition-colors",
               activeTab === tab.key
-                ? "border-cyan text-text-primary"
+                ? "border-amber text-text-primary"
                 : "border-transparent text-text-tertiary hover:text-text-secondary"
             )}
           >

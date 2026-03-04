@@ -108,7 +108,8 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="mb-8 flex flex-col items-center gap-3">
           <Link href="/" className="flex items-center gap-2.5">
-            <Image src="/icon.svg" alt="OpsConductor" width={32} height={32} className="h-8 w-8" />
+            <Image src="/icon.svg" alt="OpsConductor" width={32} height={32} className="h-8 w-8 hidden dark:block" />
+            <Image src="/icon-light.svg" alt="OpsConductor" width={32} height={32} className="h-8 w-8 dark:hidden block" />
             <img src="/brand/wordmark.svg" alt="OpsConductor" className="h-6 dark:block hidden" />
             <img src="/brand/wordmark-dark.svg" alt="OpsConductor" className="h-6 dark:hidden block" />
           </Link>
@@ -166,7 +167,7 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@company.com"
                 required
-                className="h-10 w-full rounded-md border border-border-base bg-surface-1 pl-9 pr-3 text-[13px] text-text-primary placeholder:text-text-tertiary focus:border-cyan focus:shadow-[0_0_0_3px_rgba(0,194,255,0.12)] focus:outline-none"
+                className="h-10 w-full rounded-md border border-border-base bg-surface-1 pl-9 pr-3 text-[13px] text-text-primary placeholder:text-text-tertiary focus:border-amber focus:shadow-[0_0_0_3px_rgba(245,158,11,0.12)] focus:outline-none"
               />
             </div>
           </div>
@@ -183,7 +184,7 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Your password"
                 required
-                className="h-10 w-full rounded-md border border-border-base bg-surface-1 pl-9 pr-3 text-[13px] text-text-primary placeholder:text-text-tertiary focus:border-cyan focus:shadow-[0_0_0_3px_rgba(0,194,255,0.12)] focus:outline-none"
+                className="h-10 w-full rounded-md border border-border-base bg-surface-1 pl-9 pr-3 text-[13px] text-text-primary placeholder:text-text-tertiary focus:border-amber focus:shadow-[0_0_0_3px_rgba(245,158,11,0.12)] focus:outline-none"
               />
             </div>
           </div>
@@ -208,7 +209,7 @@ export default function LoginPage() {
 
         <p className="mt-5 text-center text-[13px] text-text-tertiary">
           Don&apos;t have an account?{" "}
-          <Link href="/signup" className="font-medium text-cyan transition-colors hover:text-cyan-muted">
+          <Link href="/signup" className="font-medium text-amber transition-colors hover:text-amber/80">
             Sign up
           </Link>
         </p>
