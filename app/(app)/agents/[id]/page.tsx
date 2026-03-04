@@ -5,32 +5,15 @@ import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { agents, activityEvents } from "@/lib/mock-data"
 import { ActivityFeed } from "@/components/activity-feed"
+import { BrandIcon } from "@/components/brand-icons"
 import {
   ArrowLeft,
-  Bot,
-  Calendar,
   Clock,
-  DollarSign,
-  Mail,
-  BarChart3,
-  CreditCard,
-  MessageSquare,
-  FileText,
   Pause,
   Play,
   Settings,
-  Trash2,
-  Zap,
   MoreHorizontal,
 } from "lucide-react"
-
-const appIconMap: Record<string, { icon: React.ElementType; label: string }> = {
-  Gmail: { icon: Mail, label: "Gmail" },
-  HubSpot: { icon: BarChart3, label: "HubSpot" },
-  Stripe: { icon: CreditCard, label: "Stripe" },
-  Slack: { icon: MessageSquare, label: "Slack" },
-  Notion: { icon: FileText, label: "Notion" },
-}
 
 function StatusDot({ status }: { status: string }) {
   const styles: Record<string, string> = {
@@ -130,16 +113,12 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
               <div className="border-t border-border-subtle pt-3">
                 <span className="mb-2 block text-[11px] text-text-tertiary">Connected Apps</span>
                 <div className="flex flex-wrap gap-1.5">
-                  {agent.connectedApps.map((app) => {
-                    const info = appIconMap[app]
-                    const Icon = info?.icon || FileText
-                    return (
-                      <div key={app} className="flex items-center gap-1.5 rounded-md border border-border-subtle bg-surface-2 px-2 py-1">
-                        <Icon className="h-3 w-3 text-text-secondary" />
-                        <span className="text-[11px] text-text-secondary">{app}</span>
-                      </div>
-                    )
-                  })}
+                  {agent.connectedApps.map((app) => (
+                    <div key={app} className="flex items-center gap-1.5 rounded-md border border-border-subtle bg-surface-2 px-2 py-1">
+                      <BrandIcon name={app} className="h-3.5 w-3.5" />
+                      <span className="text-[11px] text-text-secondary">{app}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>

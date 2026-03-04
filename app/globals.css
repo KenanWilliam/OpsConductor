@@ -399,43 +399,7 @@
   animation-play-state: paused;
 }
 
-/* ── Bento Card Effects ── */
-.bento-card {
-  position: relative;
-  overflow: hidden;
-}
 
-.bento-card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  background: radial-gradient(
-    600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
-    rgba(0,194,255,0.04) 0%,
-    transparent 60%
-  );
-  transition: opacity 0.3s ease;
-  pointer-events: none;
-}
-
-.bento-card:hover::before {
-  opacity: 1;
-}
-
-/* CTA Section accent glow — cyan */
-.cta-glow { position: relative; overflow: hidden; }
-.cta-glow::before {
-  content: '';
-  position: absolute;
-  bottom: -100px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 800px;
-  height: 400px;
-  background: radial-gradient(ellipse at center bottom, rgba(0,194,255,0.07) 0%, transparent 65%);
-  pointer-events: none;
-}
 
 /* Primary Button — restrained, Vercel-quality */
 .btn-primary {
@@ -530,52 +494,7 @@
   );
 }
 
-/* LAYER 2: Cyan aurora — alive */
-.bg-aurora {
-  position: fixed;
-  top: -300px; left: 50%;
-  transform: translateX(-50%);
-  width: 1200px; height: 700px;
-  background: radial-gradient(
-    ellipse 60% 50% at 50% 0%,
-    rgba(0,194,255,0.055) 0%,
-    rgba(0,194,255,0.02) 50%,
-    transparent 100%
-  );
-  animation: auroraFloat 12s ease-in-out infinite;
-  pointer-events: none; z-index: 0;
-}
-:root.light .bg-aurora {
-  background: radial-gradient(
-    ellipse 60% 40% at 50% 0%,
-    rgba(0,119,182,0.04) 0%,
-    transparent 70%
-  );
-}
 
-@keyframes auroraFloat {
-  0%,100% {
-    transform: translateX(-50%) scaleX(1) scaleY(1);
-    opacity: 0.8;
-  }
-  33% {
-    transform: translateX(-48%) scaleX(1.05) scaleY(1.1);
-    opacity: 1;
-  }
-  66% {
-    transform: translateX(-52%) scaleX(0.97) scaleY(1.05);
-    opacity: 0.9;
-  }
-}
-
-/* LAYER 3: Grain texture — premium */
-.bg-grain {
-  position: fixed; inset: 0; z-index: 1;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
-  opacity: 0.4;
-  pointer-events: none;
-}
-:root.light .bg-grain { opacity: 0.25; }
 
 /* ---- COMMAND PALETTE ---- */
 .cmd-palette-backdrop {
@@ -662,36 +581,7 @@ kbd {
   line-height: 1;
 }
 
-/* Featured pricing card shimmer */
-@property --shimmer-angle {
-  syntax: '<angle>';
-  initial-value: 0deg;
-  inherits: false;
-}
-@keyframes shimmerRotate {
-  to { --shimmer-angle: 360deg; }
-}
-.pricing-featured {
-  position: relative;
-}
-.pricing-featured::before {
-  content: '';
-  position: absolute;
-  inset: -1px;
-  border-radius: inherit;
-  background: conic-gradient(
-    from var(--shimmer-angle),
-    transparent 0%,
-    rgba(0,194,255,0.45) 10%,
-    transparent 20%,
-    transparent 100%
-  );
-  animation: shimmerRotate 5s linear infinite;
-  z-index: -1;
-  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  mask-composite: exclude;
-  padding: 1px;
-}
+
 
 /* Light mode cockpit overrides */
 :root.light .cockpit-card {
@@ -741,16 +631,7 @@ kbd {
   color: var(--color-text-secondary);
 }
 
-/* Featured pricing shimmer — cerulean tint in light */
-:root.light .pricing-featured::before {
-  background: conic-gradient(
-    from var(--shimmer-angle),
-    transparent 0%,
-    rgba(0,119,182,0.3) 10%,
-    transparent 20%,
-    transparent 100%
-  );
-}
+
 
 /* Focus ring for inputs in light mode */
 :root.light input:focus,

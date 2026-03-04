@@ -3,29 +3,12 @@
 import { useState } from "react"
 import { cn } from "@/lib/utils"
 import { integrations } from "@/lib/mock-data"
+import { BrandIcon } from "@/components/brand-icons"
 import {
   Plug,
-  Mail,
-  BarChart3,
-  CreditCard,
-  MessageSquare,
-  FileText,
-  Cloud,
-  Calculator,
-  Table,
-  Sheet,
-  Calendar,
-  CalendarClock,
-  Check,
   AlertTriangle,
-  XCircle,
   ExternalLink,
 } from "lucide-react"
-
-const iconMap: Record<string, React.ElementType> = {
-  Mail, BarChart3, CreditCard, MessageSquare, FileText,
-  Cloud, Calculator, Table, Sheet, Calendar, CalendarClock,
-}
 
 function ConnectionStatusDot({ status }: { status?: string }) {
   const styles: Record<string, string> = {
@@ -95,14 +78,12 @@ export default function IntegrationsPage() {
       {/* Connected Grid */}
       {activeTab === "connected" && (
         <div className="grid grid-cols-3 gap-3">
-          {connected.map((integration) => {
-            const Icon = iconMap[integration.icon] || FileText
-            return (
+          {connected.map((integration) => (
               <div key={integration.id} className="flex flex-col gap-3 rounded-lg border border-border-subtle bg-surface-1 p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
                     <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface-2">
-                      <Icon className="h-4.5 w-4.5 text-text-secondary" />
+                      <BrandIcon name={integration.name} className="h-5 w-5" />
                     </div>
                     <div>
                       <p className="text-[13px] font-medium text-text-primary">{integration.name}</p>
@@ -127,8 +108,7 @@ export default function IntegrationsPage() {
                   )}
                 </div>
               </div>
-            )
-          })}
+          ))}
         </div>
       )}
 
@@ -139,13 +119,11 @@ export default function IntegrationsPage() {
             <div key={category}>
               <h3 className="mb-3 text-[13px] font-semibold text-text-primary">{category}</h3>
               <div className="grid grid-cols-3 gap-3">
-                {available.filter(i => i.category === category).map((integration) => {
-                  const Icon = iconMap[integration.icon] || FileText
-                  return (
+                {available.filter(i => i.category === category).map((integration) => (
                     <div key={integration.id} className="flex items-center justify-between rounded-lg border border-border-subtle bg-surface-1 p-4 transition-colors hover:border-border-base">
                       <div className="flex items-center gap-2.5">
                         <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface-2">
-                          <Icon className="h-4.5 w-4.5 text-text-secondary" />
+                          <BrandIcon name={integration.name} className="h-5 w-5" />
                         </div>
                         <p className="text-[13px] font-medium text-text-primary">{integration.name}</p>
                       </div>
@@ -153,8 +131,7 @@ export default function IntegrationsPage() {
                         Connect
                       </button>
                     </div>
-                  )
-                })}
+                ))}
               </div>
             </div>
           ))}

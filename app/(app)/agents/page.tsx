@@ -4,28 +4,13 @@ import { useState } from "react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { agents, type Agent } from "@/lib/mock-data"
+import { BrandIcon } from "@/components/brand-icons"
 import {
   MoreHorizontal,
   Plus,
   LayoutGrid,
   List,
-  Mail,
-  BarChart3,
-  CreditCard,
-  MessageSquare,
-  FileText,
-  Pause,
-  Trash2,
-  Play,
 } from "lucide-react"
-
-const appIconMap: Record<string, React.ElementType> = {
-  Gmail: Mail,
-  HubSpot: BarChart3,
-  Stripe: CreditCard,
-  Slack: MessageSquare,
-  Notion: FileText,
-}
 
 function StatusDot({ status }: { status: Agent["status"] }) {
   const styles: Record<string, string> = {
@@ -65,14 +50,11 @@ function Sparkline({ data }: { data: number[] }) {
 function AppIconStack({ apps }: { apps: string[] }) {
   return (
     <div className="flex items-center -space-x-1.5">
-      {apps.slice(0, 4).map((app) => {
-        const Icon = appIconMap[app] || FileText
-        return (
-          <div key={app} className="flex h-6 w-6 items-center justify-center rounded-full border border-border-subtle bg-surface-2">
-            <Icon className="h-3 w-3 text-text-secondary" />
-          </div>
-        )
-      })}
+      {apps.slice(0, 4).map((app) => (
+        <div key={app} className="flex h-6 w-6 items-center justify-center rounded-full border border-border-subtle bg-surface-2">
+          <BrandIcon name={app} className="h-3.5 w-3.5" />
+        </div>
+      ))}
     </div>
   )
 }

@@ -20,6 +20,8 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useState, useEffect, useRef } from "react"
+import { useTheme } from "next-themes"
+import { useUser, getUserDisplayInfo } from "@/lib/supabase/hooks"
 
 const primaryNav = [
   { label: "Cockpit", href: "/cockpit", icon: LayoutDashboard, kbd: "1" },
@@ -37,11 +39,10 @@ const secondaryNav = [
 /* ── User Popover ─────────────────────────────────────────── */
 function UserPopover({ onClose }: { onClose: () => void }) {
   const ref = useRef<HTMLDivElement>(null)
-  const [isDark, setIsDark] = useState(true)
-
-  useEffect(() => {
-    setIsDark(!document.documentElement.classList.contains("light"))
-  }, [])
+  const { theme, setTheme } = useTheme()
+  const { user, signOut } = useUser()
+  const { name, email } = getUserDisplayInfo(user)
+  const isDark = theme === "dark"
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -59,15 +60,7 @@ function UserPopover({ onClose }: { onClose: () => void }) {
   }, [onClose])
 
   function toggleTheme() {
-    const next = !isDark
-    setIsDark(next)
-    if (next) {
-      document.documentElement.classList.remove("light")
-      localStorage.setItem("opsc-theme", "dark")
-    } else {
-      document.documentElement.classList.add("light")
-      localStorage.setItem("opsc-theme", "light")
-    }
+    setTheme(isDark ? "light" : "dark")
   }
 
   const used = 2840
@@ -82,11 +75,11 @@ function UserPopover({ onClose }: { onClose: () => void }) {
       {/* Identity */}
       <div className="mb-3 flex items-center gap-2.5">
         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-cyan/20 text-xs font-semibold text-cyan">
-          JD
+          {getUserDisplayInfo(user).initials}
         </div>
         <div className="flex flex-col">
-          <span className="text-sm font-medium text-text-primary">Jane Doe</span>
-          <span className="font-mono text-[11px] text-text-tertiary">jane@ops.co</span>
+          <span className="text-sm font-medium text-text-primary">{name}</span>
+          <span className="font-mono text-[11px] text-text-tertiary">{email}</span>
         </div>
       </div>
 
@@ -144,7 +137,7 @@ function UserPopover({ onClose }: { onClose: () => void }) {
       <div className="my-2 border-t border-border-subtle" />
 
       {/* Sign out */}
-      <button className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary">
+      <button onClick={signOut} className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary">
         <LogOut className="h-3.5 w-3.5" />
         Sign out
       </button>
@@ -157,14 +150,8 @@ export function AppSidebar() {
   const pathname = usePathname()
   const [collapsed, setCollapsed] = useState(false)
   const [popoverOpen, setPopoverOpen] = useState(false)
-
-  // Initialize theme from localStorage
-  useEffect(() => {
-    const saved = localStorage.getItem("opsc-theme")
-    if (saved === "light") {
-      document.documentElement.classList.add("light")
-    }
-  }, [])
+  const { user } = useUser()
+  const { initials, name } = getUserDisplayInfo(user)
 
   return (
     <aside
@@ -285,11 +272,11 @@ export function AppSidebar() {
           )}
         >
           <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-cyan/20 text-[11px] font-semibold text-cyan">
-            JD
+            {initials}
           </div>
           {!collapsed && (
             <div className="flex flex-col text-left">
-              <span className="text-sm font-medium text-text-primary">Jane Doe</span>
+              <span className="text-sm font-medium text-text-primary">{name}</span>
               <span className="font-mono text-[11px] text-text-tertiary">Operator Plan</span>
             </div>
           )}
