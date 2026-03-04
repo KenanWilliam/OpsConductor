@@ -259,15 +259,30 @@
   }
 }
 
-/* Global theme transition — smooth wash on toggle */
+/* Global theme transition — everything flips at the same instant */
 *, *::before, *::after {
-  transition: background-color 250ms ease,
-              border-color 250ms ease,
-              color 150ms ease;
+  transition: background-color 200ms ease,
+              border-color 200ms ease,
+              color 200ms ease,
+              fill 200ms ease,
+              stroke 200ms ease,
+              box-shadow 200ms ease,
+              opacity 200ms ease;
 }
-/* Exclude motion-sensitive elements */
-[data-no-transition], canvas, video, [data-reveal], .hero-word {
+/* Exclude motion-sensitive elements (keep their own animation timing) */
+[data-no-transition], canvas, video {
   transition: none !important;
+}
+/* Scroll-reveal keeps its own transform transition but inherits color timing */
+[data-reveal] {
+  transition: opacity 0.65s cubic-bezier(0.16,1,0.3,1),
+              transform 0.65s cubic-bezier(0.16,1,0.3,1),
+              background-color 200ms ease,
+              border-color 200ms ease,
+              color 200ms ease !important;
+}
+.hero-word {
+  transition: color 200ms ease !important;
 }
 
 /* Status indicator animations */
@@ -346,11 +361,10 @@
   animation: approvalPulse 800ms ease;
 }
 
-/* Scroll Reveal */
+/* Scroll Reveal — initial state (transform handled by [data-reveal] rule above) */
 [data-reveal] {
   opacity: 0;
   transform: translateY(28px);
-  transition: opacity 0.65s cubic-bezier(0.16,1,0.3,1), transform 0.65s cubic-bezier(0.16,1,0.3,1) !important;
 }
 [data-reveal].in-view { opacity: 1; transform: none; }
 
@@ -359,6 +373,55 @@
 [data-reveal-group] > *:nth-child(2) { transition-delay: 80ms; }
 [data-reveal-group] > *:nth-child(3) { transition-delay: 160ms; }
 [data-reveal-group] > *:nth-child(4) { transition-delay: 240ms; }
+[data-reveal-group] > *:nth-child(5) { transition-delay: 320ms; }
+[data-reveal-group] > *:nth-child(6) { transition-delay: 400ms; }
+
+/* ── Logo Marquee ── */
+@keyframes marqueeScroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.marquee-container {
+  display: flex;
+  overflow: hidden;
+  mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+}
+
+.marquee-track {
+  display: flex;
+  flex-shrink: 0;
+  animation: marqueeScroll 40s linear infinite;
+}
+
+.marquee-track:hover {
+  animation-play-state: paused;
+}
+
+/* ── Bento Card Effects ── */
+.bento-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.bento-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  background: radial-gradient(
+    600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    rgba(0,194,255,0.04) 0%,
+    transparent 60%
+  );
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.bento-card:hover::before {
+  opacity: 1;
+}
 
 /* CTA Section accent glow — cyan */
 .cta-glow { position: relative; overflow: hidden; }
@@ -384,8 +447,7 @@
   border-radius: 7px;
   border: none;
   cursor: pointer;
-  transition: background 200ms ease,
-              filter 200ms ease;
+  /* hover transitions — inherits theme color transitions from global rule */
 }
 .btn-primary:hover {
   background: var(--color-accent-hover);
@@ -404,8 +466,7 @@
   font-weight: 500;
   border-radius: 7px;
   cursor: pointer;
-  transition: color 200ms ease,
-              border-color 200ms ease;
+  /* hover transitions inherited from global rule */
 }
 .btn-ghost:hover {
   color: var(--color-text-primary);
@@ -430,7 +491,7 @@
   font-size: 13px;
   font-weight: 450;
   text-decoration: none;
-  transition: color 200ms ease;
+  /* color transition inherited from global rule */
   position: relative;
 }
 .nav-link::after {
@@ -439,7 +500,8 @@
   bottom: -2px; left: 0;
   width: 0; height: 1px;
   background: var(--color-accent-cyan);
-  transition: width 200ms cubic-bezier(0.16,1,0.3,1);
+  transition: width 200ms cubic-bezier(0.16,1,0.3,1),
+              background-color 200ms ease;
 }
 .nav-link:hover { color: var(--color-text-primary); }
 .nav-link:hover::after { width: 100%; }

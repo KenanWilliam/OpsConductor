@@ -18,6 +18,9 @@ import {
   CheckCircle,
   Sun,
   Moon,
+  Globe,
+  Gauge,
+  GitBranch,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { BackgroundLayers } from "@/components/background-layers"
@@ -69,7 +72,6 @@ function useSmoothAnchors() {
 
 /* ── Staggered word animation — Cluely signature ── */
 function AnimatedHeadline() {
-  // "Every agent. / One cockpit. / You decide."
   const line1 = [
     { text: "Every", isAccent: false },
     { text: "agent.", isAccent: false },
@@ -163,7 +165,7 @@ function LandingNav() {
           <img src="/brand/wordmark-dark.svg" alt="OpsConductor" className="h-[22px] dark:hidden block" />
         </Link>
         <div className="hidden items-center gap-6 md:flex">
-          <a href="#problem" className="nav-link">Why</a>
+          <a href="#features" className="nav-link">Features</a>
           <a href="#how-it-works" className="nav-link">How it works</a>
           <a href="#pricing" className="nav-link">Pricing</a>
         </div>
@@ -191,7 +193,7 @@ function LandingNav() {
       </div>
       {open && (
         <div className="flex flex-col gap-4 border-t border-border-subtle bg-[var(--color-bg-base)] px-6 py-4 md:hidden">
-          <a href="#problem" className="text-[13px] text-text-secondary">Why</a>
+          <a href="#features" className="text-[13px] text-text-secondary">Features</a>
           <a href="#how-it-works" className="text-[13px] text-text-secondary">How it works</a>
           <a href="#pricing" className="text-[13px] text-text-secondary">Pricing</a>
           <Link href="/login" className="text-[13px] text-text-secondary">Log in</Link>
@@ -361,47 +363,230 @@ function HeroSection() {
   )
 }
 
-/* ── Problem Section ── */
-function ProblemSection() {
-  const ref = useReveal()
+/* ── Logo Marquee ── */
+function LogoMarquee() {
+  const companies = [
+    "Acme Corp", "Globex", "Initech", "Soylent", "Hooli",
+    "Pied Piper", "Massive Dynamic", "Cyberdyne", "Wayne Ent.", "Stark Ind.",
+    "Umbrella Corp", "Tyrell Corp",
+  ]
+
   return (
-    <section id="problem" className="mx-auto max-w-4xl px-6 py-24 text-center" ref={ref}>
-      <div data-reveal>
+    <section className="relative border-y border-border-subtle py-12 overflow-hidden">
+      <p className="text-center text-[11px] font-medium tracking-[0.2em] uppercase text-text-tertiary mb-8">
+        Trusted by forward-thinking teams
+      </p>
+      <div className="marquee-container">
+        <div className="marquee-track">
+          {[...companies, ...companies].map((name, i) => (
+            <span
+              key={i}
+              className="flex shrink-0 items-center gap-2.5 px-8 text-[14px] font-medium text-text-disabled whitespace-nowrap select-none"
+            >
+              <span className="flex h-7 w-7 items-center justify-center rounded-md bg-surface-2 text-[11px] font-bold text-text-tertiary border border-border-subtle">
+                {name[0]}
+              </span>
+              {name}
+            </span>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+/* ── Bento Features Grid ── */
+function BentoFeaturesGrid() {
+  const ref = useReveal()
+
+  return (
+    <section id="features" className="mx-auto max-w-6xl px-6 py-24" ref={ref}>
+      <div className="text-center mb-16" data-reveal>
+        <p className="text-[11px] font-medium tracking-[0.15em] uppercase text-cyan mb-3">
+          The control layer for AI ops
+        </p>
         <h2 className="text-balance text-2xl font-bold tracking-[-0.02em] text-text-primary md:text-3xl lg:text-4xl">
-          96% of operators don&apos;t trust their AI agents
+          Everything you need to orchestrate
         </h2>
         <p className="mx-auto mt-4 max-w-2xl text-pretty text-base leading-relaxed text-text-secondary">
-          You built AI agents to save time. But now you spend your time wondering what they did,
-          whether they sent the right email, or if they just offered a 20% discount to the wrong customer.
-          The problem isn&apos;t AI. The problem is control.
+          Stop wondering what your agents did. Start deciding what they do next.
         </p>
       </div>
-      <div className="mt-12 grid gap-4 md:grid-cols-3" data-reveal data-reveal-group>
-        {[
-          {
-            icon: Eye,
-            title: "No visibility",
-            description: "Your agents run in the dark. You find out what happened after the damage is done.",
-          },
-          {
-            icon: ShieldCheck,
-            title: "No guardrails",
-            description: "Every action is auto-executed. No approval layer, no risk scoring, no way to say \u2018wait.\u2019",
-          },
-          {
-            icon: Activity,
-            title: "No accountability",
-            description: "You can\u2019t trace why an agent took an action. No reasoning logs, no audit trail.",
-          },
-        ].map((item) => (
-          <div key={item.title} className="flex flex-col items-center gap-3 rounded-lg border border-border-subtle bg-surface-1 p-6">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-danger/10">
-              <item.icon className="h-5 w-5 text-danger" />
-            </div>
-            <h3 className="text-[15px] font-semibold text-text-primary">{item.title}</h3>
-            <p className="text-[13px] leading-relaxed text-text-tertiary">{item.description}</p>
+
+      <div className="grid gap-3 md:grid-cols-3 md:grid-rows-2" data-reveal data-reveal-group>
+        {/* Large card — Command Center */}
+        <div className="bento-card group md:col-span-2 rounded-2xl border border-border-subtle bg-surface-1 p-8 transition-all hover:border-cyan/30 hover:shadow-[0_0_40px_rgba(0,194,255,0.04)]">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-cyan-dim mb-5">
+            <LayoutDashboard className="h-6 w-6 text-cyan" />
           </div>
-        ))}
+          <h3 className="text-lg font-bold text-text-primary mb-2">AI Command Center</h3>
+          <p className="text-[14px] leading-relaxed text-text-secondary max-w-md">
+            See every agent, every action, every cost in real time. One cockpit to monitor your entire AI operations fleet — no more switching between dashboards.
+          </p>
+          <div className="mt-6 grid grid-cols-3 gap-3">
+            {[
+              { label: "Actions/week", value: "180+" },
+              { label: "Avg response", value: "<2s" },
+              { label: "Cost/action", value: "$0.003" },
+            ].map((stat) => (
+              <div key={stat.label} className="rounded-lg bg-surface-2 p-3 border border-border-subtle">
+                <p className="font-mono text-lg font-bold text-text-primary">{stat.value}</p>
+                <p className="text-[11px] text-text-tertiary mt-1">{stat.label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Smart Approvals */}
+        <div className="bento-card group rounded-2xl border border-border-subtle bg-surface-1 p-8 transition-all hover:border-cyan/30 hover:shadow-[0_0_40px_rgba(0,194,255,0.04)]">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-warning/10 mb-5">
+            <ShieldCheck className="h-6 w-6 text-warning" />
+          </div>
+          <h3 className="text-lg font-bold text-text-primary mb-2">Smart Approvals</h3>
+          <p className="text-[14px] leading-relaxed text-text-secondary">
+            Set risk-based approval rules per agent. Auto-execute safe actions, flag risky ones for review. Graduated trust that scales with confidence.
+          </p>
+          <div className="mt-6 space-y-2">
+            {["Low risk: auto-execute", "Medium risk: notify", "High risk: require approval"].map((rule) => (
+              <div key={rule} className="flex items-center gap-2 text-[12px] text-text-tertiary">
+                <Check className="h-3 w-3 text-success shrink-0" />
+                {rule}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Activity Trail */}
+        <div className="bento-card group rounded-2xl border border-border-subtle bg-surface-1 p-8 transition-all hover:border-cyan/30 hover:shadow-[0_0_40px_rgba(0,194,255,0.04)]">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-success/10 mb-5">
+            <Activity className="h-6 w-6 text-success" />
+          </div>
+          <h3 className="text-lg font-bold text-text-primary mb-2">Full Audit Trail</h3>
+          <p className="text-[14px] leading-relaxed text-text-secondary">
+            Every action comes with reasoning logs, timestamps, and cost tracking. Know exactly why an agent made every decision.
+          </p>
+        </div>
+
+        {/* Integrations */}
+        <div className="bento-card group rounded-2xl border border-border-subtle bg-surface-1 p-8 transition-all hover:border-cyan/30 hover:shadow-[0_0_40px_rgba(0,194,255,0.04)]">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 mb-5">
+            <Globe className="h-6 w-6 text-primary" />
+          </div>
+          <h3 className="text-lg font-bold text-text-primary mb-2">16+ Integrations</h3>
+          <p className="text-[14px] leading-relaxed text-text-secondary">
+            Gmail, HubSpot, Stripe, Slack, Notion, Clearbit, and more. One-click OAuth — connected in seconds.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-1.5">
+            {["Gmail", "HubSpot", "Stripe", "Slack", "Notion", "+11"].map((app) => (
+              <span key={app} className="rounded bg-surface-2 px-2 py-0.5 text-[10px] font-medium text-text-tertiary border border-border-subtle">
+                {app}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* Cost Tracking */}
+        <div className="bento-card group rounded-2xl border border-border-subtle bg-surface-1 p-8 transition-all hover:border-cyan/30 hover:shadow-[0_0_40px_rgba(0,194,255,0.04)]">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-chart-5/10 mb-5">
+            <Gauge className="h-6 w-6 text-chart-5" />
+          </div>
+          <h3 className="text-lg font-bold text-text-primary mb-2">Cost Intelligence</h3>
+          <p className="text-[14px] leading-relaxed text-text-secondary">
+            Track spend per agent, per action. Set budget limits and get alerts before costs spike. Know your ROI down to the cent.
+          </p>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+/* ── Horizontal Scroll Showcase ── */
+function HorizontalShowcase() {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [progress, setProgress] = useState(0)
+
+  useEffect(() => {
+    function onScroll() {
+      const el = containerRef.current
+      if (!el) return
+      const { top, height } = el.getBoundingClientRect()
+      const scrollable = height - window.innerHeight
+      if (scrollable <= 0) return
+      const p = Math.max(0, Math.min(1, -top / scrollable))
+      setProgress(p)
+    }
+    window.addEventListener("scroll", onScroll, { passive: true })
+    return () => window.removeEventListener("scroll", onScroll)
+  }, [])
+
+  const features = [
+    {
+      icon: Eye,
+      title: "Real-time visibility",
+      description: "See every action, every decision, every cost — the moment it happens. No more wondering what your agents did while you were away.",
+      stat: "Live",
+      statLabel: "event stream",
+    },
+    {
+      icon: ShieldCheck,
+      title: "Human-in-the-loop",
+      description: "Set approval rules per agent, per action type. Auto-execute low-risk tasks, flag high-risk ones for your review before they fire.",
+      stat: "3 tiers",
+      statLabel: "of approval",
+    },
+    {
+      icon: GitBranch,
+      title: "Smart workflows",
+      description: "Chain agents together with conditional logic. Build complex multi-step automations that still respect your guardrails at every gate.",
+      stat: "∞",
+      statLabel: "combinations",
+    },
+    {
+      icon: Bot,
+      title: "Agent templates",
+      description: "Pre-built agents for lead nurturing, churn rescue, invoicing, and more. Deploy in minutes, customize everything, iterate fast.",
+      stat: "8+",
+      statLabel: "ready to deploy",
+    },
+  ]
+
+  return (
+    <section ref={containerRef} className="relative" style={{ height: "250vh" }}>
+      <div className="sticky top-0 flex h-screen items-center overflow-hidden">
+        <div className="w-full px-6">
+          <div className="mx-auto max-w-6xl">
+            <p className="text-[11px] font-medium tracking-[0.15em] uppercase text-cyan mb-3">
+              Scroll to explore
+            </p>
+            <h2 className="text-2xl font-bold tracking-[-0.02em] text-text-primary md:text-3xl lg:text-4xl mb-12">
+              Built for operators who<br className="hidden md:inline" /> demand control
+            </h2>
+            <div
+              className="flex gap-6 will-change-transform"
+              style={{
+                transform: `translateX(-${progress * 55}%)`,
+                transition: "transform 0.05s linear",
+              }}
+            >
+              {features.map((f) => (
+                <div
+                  key={f.title}
+                  className="group w-[320px] shrink-0 rounded-2xl border border-border-subtle bg-surface-1 p-8 transition-all duration-300 hover:border-cyan/30 hover:shadow-[0_0_40px_rgba(0,194,255,0.06)] md:w-[380px]"
+                >
+                  <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-cyan-dim transition-transform duration-300 group-hover:scale-110">
+                    <f.icon className="h-6 w-6 text-cyan" />
+                  </div>
+                  <h3 className="text-lg font-bold text-text-primary">{f.title}</h3>
+                  <p className="mt-3 text-[14px] leading-relaxed text-text-secondary">{f.description}</p>
+                  <div className="mt-6 flex items-baseline gap-2 border-t border-border-subtle pt-4">
+                    <span className="font-mono text-2xl font-bold text-cyan">{f.stat}</span>
+                    <span className="text-[12px] text-text-tertiary">{f.statLabel}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   )
@@ -463,6 +648,69 @@ function HowItWorksSection() {
             </div>
           </div>
         ))}
+      </div>
+    </section>
+  )
+}
+
+/* ── Animated Counter ── */
+function AnimatedCounter({ target, suffix = "", label }: { target: number; suffix?: string; label: string }) {
+  const [count, setCount] = useState(0)
+  const ref = useRef<HTMLDivElement>(null)
+  const counted = useRef(false)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !counted.current) {
+          counted.current = true
+          const duration = 2000
+          const startTime = performance.now()
+          function animate(now: number) {
+            const elapsed = Math.min((now - startTime) / duration, 1)
+            const eased = 1 - Math.pow(1 - elapsed, 3)
+            setCount(Math.round(eased * target))
+            if (elapsed < 1) requestAnimationFrame(animate)
+          }
+          requestAnimationFrame(animate)
+        }
+      },
+      { threshold: 0.3 }
+    )
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [target])
+
+  return (
+    <div ref={ref} className="text-center">
+      <p className="font-mono text-4xl font-bold text-text-primary md:text-5xl">
+        {count.toLocaleString()}{suffix}
+      </p>
+      <p className="mt-2 text-[13px] text-text-secondary">{label}</p>
+    </div>
+  )
+}
+
+/* ── Metrics Section ── */
+function MetricsSection() {
+  const ref = useReveal()
+
+  return (
+    <section className="mx-auto max-w-5xl px-6 py-24" ref={ref}>
+      <div data-reveal>
+        <div className="rounded-2xl border border-border-subtle bg-surface-1 p-12 md:p-16">
+          <p className="text-center text-[11px] font-medium tracking-[0.15em] uppercase text-cyan mb-10">
+            Platform metrics
+          </p>
+          <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
+            <AnimatedCounter target={10000} suffix="+" label="Actions executed" />
+            <AnimatedCounter target={99} suffix="%" label="Uptime SLA" />
+            <AnimatedCounter target={85} suffix="%" label="Time saved" />
+            <AnimatedCounter target={16} suffix="+" label="Integrations" />
+          </div>
+        </div>
       </div>
     </section>
   )
@@ -584,72 +832,139 @@ function PricingSection() {
   )
 }
 
-/* ── CTA / Waitlist ── */
-function WaitlistSection() {
+/* ── Final CTA ── */
+function FinalCTA() {
   const ref = useReveal()
-  const [email, setEmail] = useState("")
-  const [submitted, setSubmitted] = useState(false)
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!email) return
-    setSubmitted(true)
-  }
 
   return (
-    <section className="cta-glow mx-auto max-w-3xl px-6 py-24 text-center" ref={ref}>
-      <div className="relative z-10 rounded-xl border border-border-subtle bg-surface-1 p-10 md:p-16" data-reveal>
-        <h2 className="text-balance text-2xl font-bold tracking-[-0.02em] text-text-primary md:text-3xl lg:text-4xl">
-          Ready to take control?
-        </h2>
-        <p className="mx-auto mt-3 max-w-md text-pretty text-[15px] text-text-secondary">
-          Join the beta and be the first to orchestrate your AI agents with confidence.
-        </p>
-        {submitted ? (
-          <div className="mx-auto mt-8 flex max-w-sm flex-col items-center gap-2">
-            <CheckCircle className="h-8 w-8 text-success" />
-            <p className="text-[15px] font-medium text-text-primary">You&apos;re on the list!</p>
-            <p className="text-[13px] text-text-secondary">We&apos;ll reach out when your seat is ready.</p>
+    <section className="relative mx-auto max-w-5xl px-6 py-24" ref={ref}>
+      <div
+        className="relative z-10 overflow-hidden rounded-2xl border border-cyan/20 bg-surface-1 p-12 text-center md:p-20"
+        data-reveal
+      >
+        {/* Glow effect */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute -top-24 left-1/2 -translate-x-1/2 h-48 w-[600px] bg-[radial-gradient(ellipse_at_center,rgba(0,194,255,0.12)_0%,transparent_70%)] blur-2xl" />
+        </div>
+
+        <div className="relative z-10">
+          <h2 className="text-balance text-2xl font-bold tracking-[-0.02em] text-text-primary md:text-3xl lg:text-4xl">
+            Ready to take control?
+          </h2>
+          <p className="mx-auto mt-4 max-w-md text-pretty text-[15px] leading-relaxed text-text-secondary">
+            Join the beta and be the first to orchestrate your AI agents with confidence. No credit card required.
+          </p>
+          <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+            <Link
+              href="/signup"
+              className="btn-primary btn-link flex items-center gap-2 rounded-[7px] px-8 py-3 text-[15px] font-semibold"
+            >
+              Start for free <span className="arrow"><ArrowRight className="h-4 w-4" /></span>
+            </Link>
+            <Link
+              href="/cockpit"
+              className="btn-ghost flex items-center gap-2 px-6 py-3 text-[14px]"
+            >
+              View demo <ChevronRight className="h-4 w-4" />
+            </Link>
           </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="mx-auto mt-8 flex max-w-sm flex-col gap-3 sm:flex-row">
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@company.com"
-              className="h-10 flex-1 rounded-[7px] border border-border-base bg-surface-2 px-3 text-[13px] text-text-primary placeholder:text-text-tertiary focus:border-cyan focus:shadow-[0_0_0_3px_rgba(0,194,255,0.12)] focus:outline-none"
-            />
-            <button type="submit" className="btn-primary h-10 rounded-[7px] px-6 text-[14px]">
-              Join waitlist
-            </button>
-          </form>
-        )}
-        <p className="mt-4 text-[11px] text-text-tertiary">
-          Free during beta. No credit card required.
-        </p>
+        </div>
       </div>
     </section>
   )
 }
 
-/* ── Footer ── */
-function LandingFooter() {
+/* ── Immersive Footer ── */
+function ImmersiveFooter() {
+  const footerLinks = {
+    Product: [
+      { label: "Features", href: "#features" },
+      { label: "Pricing", href: "#pricing" },
+      { label: "Integrations", href: "/integrations" },
+      { label: "Changelog", href: "#" },
+      { label: "Roadmap", href: "#" },
+    ],
+    Resources: [
+      { label: "Documentation", href: "#" },
+      { label: "API Reference", href: "#" },
+      { label: "Blog", href: "#" },
+      { label: "Guides", href: "#" },
+    ],
+    Company: [
+      { label: "About", href: "#" },
+      { label: "Careers", href: "#" },
+      { label: "Contact", href: "#" },
+      { label: "Privacy", href: "#" },
+      { label: "Terms", href: "#" },
+    ],
+  }
+
   return (
-    <footer className="border-t border-border-subtle px-6 py-8">
-      <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 md:flex-row">
-        <div className="flex items-center gap-2">
-          <img src="/icon.svg" alt="OpsConductor" className="h-6 w-6" />
-          <img src="/brand/wordmark.svg" alt="OpsConductor" className="h-5 hidden dark:block" />
-          <img src="/brand/wordmark-dark.svg" alt="OpsConductor" className="h-5 dark:hidden block" />
+    <footer className="relative mt-8 border-t border-border-subtle">
+      {/* Gradient glow on top border */}
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan/40 to-transparent" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 h-24 w-[600px] bg-[radial-gradient(ellipse_at_center,rgba(0,194,255,0.06)_0%,transparent_70%)]" />
+
+      <div className="relative z-10 mx-auto max-w-6xl px-6">
+        {/* Main footer content */}
+        <div className="grid gap-12 py-16 md:grid-cols-5">
+          {/* Brand column */}
+          <div className="md:col-span-2">
+            <div className="flex items-center gap-2.5 mb-4">
+              <img src="/icon.svg" alt="OpsConductor" className="h-7 w-7" />
+              <img src="/brand/wordmark.svg" alt="OpsConductor" className="h-[20px] hidden dark:block" />
+              <img src="/brand/wordmark-dark.svg" alt="OpsConductor" className="h-[20px] dark:hidden block" />
+            </div>
+            <p className="text-[13px] leading-relaxed text-text-secondary max-w-xs">
+              The control layer for AI operations. See everything, approve what matters, automate the rest.
+            </p>
+            {/* Status indicator */}
+            <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-border-subtle bg-surface-1 px-3 py-1.5">
+              <div className="h-2 w-2 rounded-full bg-success status-running" />
+              <span className="text-[11px] font-medium text-text-secondary">All systems operational</span>
+            </div>
+          </div>
+
+          {/* Link columns */}
+          {Object.entries(footerLinks).map(([category, links]) => (
+            <div key={category}>
+              <h4 className="text-[11px] font-semibold tracking-[0.15em] uppercase text-text-tertiary mb-4">
+                {category}
+              </h4>
+              <ul className="space-y-2.5">
+                {links.map((link) => (
+                  <li key={link.label}>
+                    <a
+                      href={link.href}
+                      className="text-[13px] text-text-secondary transition-colors hover:text-text-primary"
+                    >
+                      {link.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
-        <div className="flex items-center gap-6">
-          <a href="#pricing" className="nav-link">Pricing</a>
-          <Link href="/cockpit" className="nav-link">Demo</Link>
-          <Link href="/login" className="nav-link">Log in</Link>
+
+        {/* Bottom bar */}
+        <div className="flex flex-col items-center justify-between gap-4 border-t border-border-subtle py-6 md:flex-row">
+          <p className="text-[11px] text-text-tertiary">
+            &copy; {new Date().getFullYear()} OpsConductor. All rights reserved.
+          </p>
+          <div className="flex items-center gap-4">
+            {/* Social links */}
+            <a href="#" className="text-text-tertiary transition-colors hover:text-text-secondary" aria-label="Twitter">
+              <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
+            </a>
+            <a href="#" className="text-text-tertiary transition-colors hover:text-text-secondary" aria-label="GitHub">
+              <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z" /></svg>
+            </a>
+            <a href="#" className="text-text-tertiary transition-colors hover:text-text-secondary" aria-label="LinkedIn">
+              <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" /></svg>
+            </a>
+          </div>
         </div>
-        <p className="text-[11px] text-text-tertiary">&copy; 2026 OpsConductor. All rights reserved.</p>
       </div>
     </footer>
   )
@@ -675,11 +990,14 @@ export default function LandingPage() {
       <div className="relative z-10">
         <LandingNav />
         <HeroSection />
-        <ProblemSection />
+        <LogoMarquee />
+        <BentoFeaturesGrid />
+        <HorizontalShowcase />
         <HowItWorksSection />
+        <MetricsSection />
         <PricingSection />
-        <WaitlistSection />
-        <LandingFooter />
+        <FinalCTA />
+        <ImmersiveFooter />
       </div>
     </div>
   )

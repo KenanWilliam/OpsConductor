@@ -17,11 +17,20 @@ export default function LoginPage() {
 
   const supabase = createClient()
 
-  // Redirect if already authenticated
+  // Redirect if already authenticated & listen for auth state changes
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) router.replace("/cockpit")
+      if (user) window.location.href = "/cockpit"
     })
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event) => {
+        if (event === 'SIGNED_IN') {
+          window.location.href = "/cockpit"
+        }
+      }
+    )
+    return () => subscription.unsubscribe()
   }, [])
 
   async function handleGoogleLogin() {
@@ -61,7 +70,7 @@ export default function LoginPage() {
       setMessage({ type: "error", text: error.message })
       setLoading(false)
     } else {
-      router.push("/cockpit")
+      window.location.href = "/cockpit"
     }
   }
 
