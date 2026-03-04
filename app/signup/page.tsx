@@ -64,21 +64,29 @@ export default function SignupPage() {
     setLoading(true)
     setMessage(null)
 
-    // Sign up with email — sends a confirmation magic link
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         emailRedirectTo: `${window.location.origin}/auth/callback`,
-        data: { workspace_name: workspace },
+        data: { workspace_name: workspace, full_name: workspace },
       },
     })
 
     if (error) {
       setMessage({ type: "error", text: error.message })
-    } else {
-      setMessage({ type: "success", text: "Check your email to confirm your account!" })
+      setLoading(false)
+      return
     }
+
+    // If email confirmation is disabled, session exists immediately
+    if (data.session) {
+      window.location.href = "/cockpit"
+      return
+    }
+
+    // Email confirmation required
+    setMessage({ type: "success", text: "Check your email to confirm your account!" })
     setLoading(false)
   }
 

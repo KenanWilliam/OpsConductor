@@ -1,12 +1,13 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 import { useWorkspace } from "@/lib/hooks/use-workspace"
 import { toastSuccess, toastError } from "@/lib/supabase/errors"
 import {
-  User, Building2, Shield, Loader2, Save, Trash2,
+  User, Building2, Shield, Loader2, Save, Trash2, RotateCcw,
 } from "lucide-react"
 
 type SettingsTab = "profile" | "workspace" | "security"
@@ -14,6 +15,7 @@ type SettingsTab = "profile" | "workspace" | "security"
 export default function SettingsPage() {
   const { workspace, profile, refetch: refreshWorkspace } = useWorkspace()
   const supabase = createClient()
+  const router = useRouter()
 
   const [tab, setTab] = useState<SettingsTab>("profile")
   const [saving, setSaving] = useState(false)
@@ -128,6 +130,7 @@ export default function SettingsPage() {
 
       {/* Profile Tab */}
       {tab === 'profile' && (
+        <div className="flex flex-col gap-5">
         <form onSubmit={saveProfile} className="flex flex-col gap-5">
           <fieldset className="flex flex-col gap-4 rounded-lg border border-border-subtle bg-surface-1 p-4">
             <legend className="text-[13px] font-semibold text-text-primary px-1">Profile Information</legend>
@@ -166,6 +169,33 @@ export default function SettingsPage() {
             </button>
           </div>
         </form>
+
+        {/* Restart Tutorial */}
+        <fieldset className="flex flex-col gap-3 rounded-lg border border-border-subtle bg-surface-1 p-4">
+          <legend className="text-[13px] font-semibold text-text-primary px-1">Onboarding</legend>
+          <p className="text-[12px] text-text-secondary">Restart the guided tutorial to walk through setup again.</p>
+          <button
+            type="button"
+            onClick={async () => {
+              if (!profile) return
+              await supabase
+                .from('profiles')
+                .update({
+                  onboarding_step: 0,
+                  onboarding_completed: false,
+                  onboarding_dismissed: false,
+                })
+                .eq('id', profile.id)
+              toastSuccess('Tutorial restarted')
+              refreshWorkspace()
+              router.refresh()
+            }}
+            className="flex items-center gap-1.5 self-start rounded-md border border-border-base bg-surface-2 px-3 py-1.5 text-[12px] font-medium text-text-secondary hover:text-text-primary transition-colors"
+          >
+            <RotateCcw className="h-3.5 w-3.5" /> Restart Tutorial
+          </button>
+        </fieldset>
+        </div>
       )}
 
       {/* Workspace Tab */}

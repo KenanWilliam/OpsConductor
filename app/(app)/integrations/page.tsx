@@ -1,17 +1,29 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, Suspense } from "react"
+import { useSearchParams } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 import { useWorkspace } from "@/lib/hooks/use-workspace"
 import { toastSuccess, toastError } from "@/lib/supabase/errors"
 import { IntegrationLogo } from "@/components/integration-logo"
 import { TimeAgo } from "@/components/time-ago"
+import { SkeletonLoader } from "@/components/skeleton-loader"
+import { EmptyState } from "@/components/empty-state"
+import { StripeKeyModal } from "@/components/stripe-key-modal"
 import type { DbIntegration } from "@/lib/types"
 type Integration = DbIntegration
 import {
-  Plug, CheckCircle, Plus, Loader2, Trash2, ExternalLink,
+  Plug, CheckCircle, Plus, Loader2, Trash2, ExternalLink, Key,
 } from "lucide-react"
+
+/* OAuth-capable providers that redirect to /api/oauth/authorize */
+const OAUTH_PROVIDERS = new Set([
+  'gmail', 'slack', 'hubspot', 'github', 'linear', 'notion',
+])
+
+/* Providers that use an API-key modal instead of OAuth */
+const API_KEY_PROVIDERS = new Set(['stripe'])
 
 const ALL_PROVIDERS = [
   { provider: "slack", label: "Slack", category: "Communication", description: "Send messages, create channels, post agent updates" },
@@ -35,15 +47,53 @@ const ALL_PROVIDERS = [
 
 type ViewFilter = "all" | "connected" | "available"
 
+/** Wrapper with Suspense boundary for useSearchParams */
 export default function IntegrationsPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col gap-5 p-6">
+        <div className="flex items-center gap-2">
+          <Plug className="h-5 w-5 text-amber" />
+          <h1 className="text-xl font-semibold text-text-primary">Integrations</h1>
+        </div>
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="animate-pulse rounded-lg border border-border-subtle bg-surface-1 p-4">
+              <div className="flex items-center gap-2.5 mb-3">
+                <div className="h-7 w-7 rounded-md bg-surface-3" />
+                <div className="h-4 w-24 rounded bg-surface-3" />
+              </div>
+              <div className="h-3 w-3/4 rounded bg-surface-3 mb-2" />
+              <div className="h-3 w-1/2 rounded bg-surface-3" />
+            </div>
+          ))}
+        </div>
+      </div>
+    }>
+      <IntegrationsContent />
+    </Suspense>
+  )
+}
+
+function IntegrationsContent() {
   const { workspace } = useWorkspace()
   const supabase = createClient()
+  const searchParams = useSearchParams()
 
   const [integrations, setIntegrations] = useState<Integration[]>([])
   const [loading, setLoading] = useState(true)
   const [view, setView] = useState<ViewFilter>("all")
   const [connecting, setConnecting] = useState<string | null>(null)
   const [disconnecting, setDisconnecting] = useState<string | null>(null)
+  const [stripeModalOpen, setStripeModalOpen] = useState(false)
+
+  // Handle OAuth success / error query params
+  useEffect(() => {
+    const connected = searchParams.get('connected')
+    const error = searchParams.get('error')
+    if (connected) toastSuccess(`${connected} connected successfully`)
+    if (error === 'oauth_failed') toastError('OAuth connection failed. Try again.')
+  }, [searchParams])
 
   const fetchIntegrations = useCallback(async () => {
     const { data } = await supabase
@@ -60,16 +110,32 @@ export default function IntegrationsPage() {
 
   async function connectProvider(provider: string) {
     if (!workspace?.id) return
-    setConnecting(provider)
 
-    // Simulated OAuth flow — inserts integration record
-    const { error } = await supabase.from('integrations').insert({
+    // OAuth providers → redirect to authorization endpoint
+    if (OAUTH_PROVIDERS.has(provider)) {
+      setConnecting(provider)
+      window.location.href = `/api/oauth/authorize?provider=${provider}`
+      return
+    }
+
+    // Stripe → open API key modal
+    if (API_KEY_PROVIDERS.has(provider)) {
+      setStripeModalOpen(true)
+      return
+    }
+
+    // Fallback for providers without OAuth yet (demo connect)
+    setConnecting(provider)
+    const { error } = await supabase.from('integrations').upsert({
       workspace_id: workspace.id,
       provider,
       status: 'active',
       account_label: `demo@${provider}.com`,
       scopes: ['read', 'write'],
       connected_by: workspace.id,
+      connected_at: new Date().toISOString(),
+    }, {
+      onConflict: 'workspace_id,provider',
     })
 
     if (error) {
@@ -77,6 +143,7 @@ export default function IntegrationsPage() {
     } else {
       toastSuccess(`${provider} connected successfully`)
       fetchIntegrations()
+      await supabase.rpc('complete_setup_step', { p_step: 'integration_connected' })
     }
     setConnecting(null)
   }
@@ -104,8 +171,23 @@ export default function IntegrationsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-[60vh]">
-        <Loader2 className="h-6 w-6 animate-spin text-text-tertiary" />
+      <div className="flex flex-col gap-5 p-6">
+        <div className="flex items-center gap-2">
+          <Plug className="h-5 w-5 text-amber" />
+          <h1 className="text-xl font-semibold text-text-primary">Integrations</h1>
+        </div>
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="animate-pulse rounded-lg border border-border-subtle bg-surface-1 p-4">
+              <div className="flex items-center gap-2.5 mb-3">
+                <div className="h-7 w-7 rounded-md bg-surface-3" />
+                <div className="h-4 w-24 rounded bg-surface-3" />
+              </div>
+              <div className="h-3 w-3/4 rounded bg-surface-3 mb-2" />
+              <div className="h-3 w-1/2 rounded bg-surface-3" />
+            </div>
+          ))}
+        </div>
       </div>
     )
   }
@@ -140,6 +222,16 @@ export default function IntegrationsPage() {
         ))}
       </div>
 
+      {/* Empty state when no integrations connected yet (on the connected tab) */}
+      {view === 'connected' && connectedProviders.size === 0 && (
+        <EmptyState
+          icon={Plug}
+          iconColor="text-amber"
+          headline="No integrations connected"
+          description="Connect your first tool to give agents access to your apps."
+        />
+      )}
+
       {/* Integration grid by category */}
       {categories.map(category => {
         const providers = filteredProviders.filter(p => p.category === category)
@@ -153,6 +245,8 @@ export default function IntegrationsPage() {
                 const integration = integrations.find(i => i.provider === p.provider && i.status === 'active')
                 const isConnecting = connecting === p.provider
                 const isDisconnecting = disconnecting === integration?.id
+                const isOAuth = OAUTH_PROVIDERS.has(p.provider)
+                const isApiKey = API_KEY_PROVIDERS.has(p.provider)
 
                 return (
                   <div key={p.provider}
@@ -180,14 +274,17 @@ export default function IntegrationsPage() {
                       ) : (
                         <button onClick={() => connectProvider(p.provider)} disabled={isConnecting}
                           className="flex items-center gap-1 rounded-md bg-amber px-2.5 py-1 text-[11px] font-semibold text-primary-foreground hover:bg-amber-hover transition-colors disabled:opacity-50">
-                          {isConnecting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
-                          Connect
+                          {isConnecting ? <Loader2 className="h-3 w-3 animate-spin" /> : isApiKey ? <Key className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
+                          {isApiKey ? 'Add Key' : 'Connect'}
                         </button>
                       )}
                     </div>
                     <p className="text-[11px] leading-relaxed text-text-tertiary">{p.description}</p>
                     {isConnected && integration && (
                       <div className="text-[10px] text-text-tertiary border-t border-border-subtle pt-2">
+                        {integration.account_label && (
+                          <span className="text-text-secondary">{integration.account_label} · </span>
+                        )}
                         Connected <TimeAgo date={integration.connected_at || integration.last_used_at} />
                       </div>
                     )}
@@ -198,6 +295,16 @@ export default function IntegrationsPage() {
           </div>
         )
       })}
+
+      {/* Stripe API Key Modal */}
+      <StripeKeyModal
+        open={stripeModalOpen}
+        onClose={() => setStripeModalOpen(false)}
+        onConnected={() => {
+          setStripeModalOpen(false)
+          fetchIntegrations()
+        }}
+      />
     </div>
   )
 }

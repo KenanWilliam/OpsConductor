@@ -154,11 +154,34 @@ export default function ApprovalsPage() {
 
       {/* List */}
       {loading ? (
-        <div className="flex items-center justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-text-tertiary" /></div>
+        <div className="flex flex-col gap-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="animate-pulse rounded-lg border border-border-subtle bg-surface-1 p-4">
+              <div className="flex items-center gap-3">
+                <div className="h-4 w-4 rounded bg-surface-3" />
+                <div className="flex-1">
+                  <div className="h-4 w-48 rounded bg-surface-3 mb-2" />
+                  <div className="h-3 w-32 rounded bg-surface-3" />
+                </div>
+                <div className="flex gap-1.5">
+                  <div className="h-7 w-20 rounded-md bg-surface-3" />
+                  <div className="h-7 w-16 rounded-md bg-surface-3" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       ) : approvals.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 gap-2">
-          <CheckCircle className="h-10 w-10 text-text-tertiary" />
-          <p className="text-text-secondary text-[13px]">{tab === 'pending' ? 'No pending approvals' : 'No approvals found'}</p>
+        <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-border-subtle bg-surface-1 px-6 py-12 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-success/10">
+            <CheckCircle className="h-6 w-6 text-success" />
+          </div>
+          <h3 className="text-[15px] font-semibold text-text-primary">
+            {tab === 'pending' ? "You're all caught up" : 'No approvals found'}
+          </h3>
+          <p className="max-w-xs text-[13px] text-text-secondary">
+            {tab === 'pending' ? 'No actions waiting for review.' : 'No approvals match your current view.'}
+          </p>
         </div>
       ) : (
         <div className="flex flex-col gap-3">

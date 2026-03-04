@@ -11,7 +11,7 @@ import { JsonViewer } from "@/components/json-viewer"
 import type { DbEvent } from "@/lib/types"
 import {
   Search, Filter, Download, Loader2, ChevronDown, ChevronRight,
-  Radio, CircleOff, X,
+  Radio, CircleOff, X, Activity,
 } from "lucide-react"
 
 const PAGE_SIZE = 50
@@ -198,10 +198,35 @@ export default function ActivityPage() {
 
       {/* Event table */}
       {loading ? (
-        <div className="flex items-center justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-text-tertiary" /></div>
+        <div className="overflow-hidden rounded-lg border border-border-subtle bg-surface-1">
+          <div className="border-b border-border-subtle bg-surface-2 px-4 py-2.5">
+            <div className="flex gap-8">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="h-3 w-16 animate-pulse rounded bg-surface-3" />
+              ))}
+            </div>
+          </div>
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-4 border-b border-border-subtle px-4 py-3 last:border-0">
+              <div className="h-4 w-4 animate-pulse rounded bg-surface-3" />
+              <div className="h-3 w-40 animate-pulse rounded bg-surface-3" />
+              <div className="h-3 w-20 animate-pulse rounded bg-surface-3" />
+              <div className="h-3 w-16 animate-pulse rounded bg-surface-3" />
+              <div className="h-5 w-14 animate-pulse rounded-full bg-surface-3" />
+              <div className="h-5 w-12 animate-pulse rounded-full bg-surface-3" />
+              <div className="ml-auto h-3 w-16 animate-pulse rounded bg-surface-3" />
+            </div>
+          ))}
+        </div>
       ) : events.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 gap-2">
-          <p className="text-text-secondary text-[13px]">No events found</p>
+        <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-border-subtle bg-surface-1 px-6 py-12 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber/10">
+            <Activity className="h-6 w-6 text-amber" />
+          </div>
+          <h3 className="text-[15px] font-semibold text-text-primary">No activity yet</h3>
+          <p className="max-w-xs text-[13px] text-text-secondary">
+            Events will appear here once your agents start running.
+          </p>
         </div>
       ) : (
         <>

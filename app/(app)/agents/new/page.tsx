@@ -152,7 +152,7 @@ export default function NewAgentPage() {
         </fieldset>
 
         {/* Approval Settings */}
-        <fieldset className="flex flex-col gap-4 rounded-lg border border-border-subtle bg-surface-1 p-4">
+        <fieldset data-tour="approval-mode-field" className="flex flex-col gap-4 rounded-lg border border-border-subtle bg-surface-1 p-4">
           <legend className="text-[13px] font-semibold text-text-primary px-1">Approval Settings</legend>
           <div className="flex flex-col gap-2">
             {[

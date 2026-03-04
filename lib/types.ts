@@ -8,6 +8,8 @@ export interface Workspace {
   events_quota: number
   events_used: number
   stripe_id: string | null
+  setup_completed: boolean
+  setup_steps_done: string[]
   created_at: string
   updated_at: string
 }
@@ -18,6 +20,9 @@ export interface Profile {
   full_name: string
   avatar_url: string | null
   role: 'owner' | 'admin' | 'member'
+  onboarding_completed: boolean
+  onboarding_step: number
+  onboarding_dismissed: boolean
   created_at: string
   updated_at: string
 }
@@ -36,6 +41,7 @@ export interface DbAgent {
   integrations: string[] | null
   model: string | null
   system_prompt: string | null
+  webhook_secret: string | null
   run_count: number
   last_run_at: string | null
   created_by: string | null
@@ -56,6 +62,7 @@ export interface AgentRun {
   approval_count: number | null
   cost_usd: number | null
   error: string | null
+  log: Record<string, unknown>[]
   metadata: Record<string, unknown> | null
 }
 

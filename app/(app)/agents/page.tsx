@@ -41,25 +41,45 @@ export default function AgentsPage() {
   }, [workspace?.id])
 
   async function handleRunNow(agent: DbAgent) {
-    const res = await fetch(`/api/agents/${agent.id}/run`, { method: 'POST' })
-    if (res.ok) {
-      toastSuccess(`Agent ${agent.name} started`)
-      setAgents(prev => prev.map(a => a.id === agent.id ? { ...a, status: 'running' as const, run_count: a.run_count + 1 } : a))
-    } else {
-      toastError('Failed to start agent')
+    if (!workspace?.id) return
+    const supabase = createClient()
+
+    // Optimistic update
+    setAgents(prev => prev.map(a => a.id === agent.id ? { ...a, status: 'running' as const, run_count: a.run_count + 1 } : a))
+
+    const { error } = await supabase.from('agent_runs').insert({
+      agent_id: agent.id,
+      workspace_id: workspace.id,
+      status: 'running',
+      triggered_by: 'manual',
+      started_at: new Date().toISOString(),
+    })
+
+    if (error) {
+      setAgents(prev => prev.map(a => a.id === agent.id ? { ...a, status: agent.status, run_count: a.run_count - 1 } : a))
+      if (error.code === 'P0040') {
+        toastError('Agent is not runnable (archived or error state).')
+      } else if (error.code === 'P0001') {
+        toastError('Monthly event quota reached. Upgrade your plan.')
+      } else {
+        toastError(error)
+      }
+      return
     }
+
+    await supabase.from('agents').update({ status: 'running', last_run_at: new Date().toISOString() }).eq('id', agent.id)
+    toastSuccess(`Agent ${agent.name} started`)
   }
 
   async function handleTogglePause(agent: DbAgent) {
     const newStatus = agent.status === 'running' ? 'paused' : 'idle'
-    const res = await fetch(`/api/agents/${agent.id}/status`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: newStatus }),
-    })
-    if (res.ok) {
+    const supabase = createClient()
+    const { error } = await supabase.from('agents').update({ status: newStatus }).eq('id', agent.id)
+    if (!error) {
       toastSuccess(agent.status === 'running' ? `${agent.name} paused` : `${agent.name} resumed`)
       setAgents(prev => prev.map(a => a.id === agent.id ? { ...a, status: newStatus as DbAgent['status'] } : a))
+    } else {
+      toastError(error)
     }
   }
 
@@ -79,7 +99,7 @@ export default function AgentsPage() {
           <h1 className="text-xl font-semibold text-text-primary">Agents</h1>
           <p className="text-[13px] text-text-secondary">{agents.length} agents configured</p>
         </div>
-        <Link href="/agents/new" className="flex items-center gap-2 rounded-md bg-amber px-4 py-2 text-[13px] font-semibold text-primary-foreground transition-colors hover:bg-amber-hover">
+        <Link href="/agents/new" data-tour="new-agent-button" className="flex items-center gap-2 rounded-md bg-amber px-4 py-2 text-[13px] font-semibold text-primary-foreground transition-colors hover:bg-amber-hover">
           <Plus className="h-4 w-4" />
           New Agent
         </Link>

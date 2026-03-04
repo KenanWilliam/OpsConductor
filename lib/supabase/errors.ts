@@ -1,14 +1,31 @@
 import type { PostgrestError } from '@supabase/supabase-js'
 import { toast } from 'sonner'
 
+const ERROR_MAP: Record<string, string> = {
+  'P0001': 'Event quota exceeded. Upgrade your plan.',
+  'P0002': 'Invalid decision.',
+  'P0003': 'Note too long (max 2000 characters).',
+  'P0004': 'Not authenticated.',
+  'P0005': 'Record not found.',
+  'P0006': 'Already resolved.',
+  'P0007': 'Approval has expired.',
+  'P0008': 'Content too large (max 100KB).',
+  'P0010': 'Agent limit reached for your plan.',
+  'P0011': 'Notification quota exceeded.',
+  'P0030': 'You cannot change your own role.',
+  'P0040': 'Agent is not runnable (archived or error state).',
+  'P0050': 'Cannot delete workspace with running agents.',
+  'P0060': 'Too many requests. Please slow down.',
+  '23514': 'Value failed validation. Check field length and format.',
+  '23505': 'This record already exists.',
+  '23503': 'Referenced record not found.',
+  '42501': 'Permission denied.',
+  'PGRST116': 'Record not found.',
+  'PGRST301': 'Request timed out.',
+}
+
 export function handleSupabaseError(error: PostgrestError): string {
-  if (error.code === 'P0010') return 'Agent limit reached for your plan'
-  if (error.code === 'P0060') return 'Too many requests, please slow down'
-  if (error.code === '42501') return 'Permission denied'
-  if (error.code === 'PGRST116') return 'Record not found'
-  if (error.code === '23505') return 'A record with that name already exists'
-  if (error.code === '23503') return 'Referenced record not found'
-  return error.message
+  return ERROR_MAP[error.code ?? ''] ?? error.message ?? 'An unexpected error occurred.'
 }
 
 export function toastError(error: PostgrestError | Error | string) {

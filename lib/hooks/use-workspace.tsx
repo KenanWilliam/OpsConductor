@@ -41,22 +41,36 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       }
       setUser(authUser)
 
-      // Fetch profile
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', authUser.id)
-        .single()
+      // Retry loop for fresh signups — the handle_new_user trigger may need
+      // a brief moment to commit the profile row after auth.users insert.
+      let profileData = null
+      const maxAttempts = 5
+      for (let i = 0; i < maxAttempts; i++) {
+        const { data, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', authUser.id)
+          .single()
 
-      if (profileError) {
-        setError(profileError.message)
+        if (data?.workspace_id) {
+          profileData = data
+          break
+        }
+
+        if (i < maxAttempts - 1) {
+          await new Promise(r => setTimeout(r, 300 * (i + 1)))
+        }
+      }
+
+      if (!profileData) {
+        setError('Account setup failed. Please try logging out and back in, or contact support.')
         setIsLoading(false)
         return
       }
       setProfile(profileData)
 
       // Fetch workspace
-      if (profileData?.workspace_id) {
+      if (profileData.workspace_id) {
         const { data: workspaceData, error: wsError } = await supabase
           .from('workspaces')
           .select('*')

@@ -10,7 +10,7 @@ import { TimeAgo } from "@/components/time-ago"
 import { IntegrationLogo } from "@/components/integration-logo"
 import { SkeletonLoader } from "@/components/skeleton-loader"
 import { toastSuccess, toastError } from "@/lib/supabase/errors"
-import { Play, Pause } from "lucide-react"
+import { Play, Pause, Bot } from "lucide-react"
 import type { DbAgent } from "@/lib/types"
 
 export function AgentStatusPanel() {
@@ -51,26 +51,46 @@ export function AgentStatusPanel() {
   }, [workspace?.id])
 
   async function handleRunNow(agent: DbAgent) {
-    const res = await fetch(`/api/agents/${agent.id}/run`, { method: 'POST' })
-    if (res.ok) {
-      toastSuccess(`Agent ${agent.name} started`)
-      setAgents(prev => prev.map(a => a.id === agent.id ? { ...a, status: 'running' as const } : a))
-    } else {
-      const err = await res.json()
-      toastError(err.error || 'Failed to start agent')
+    if (!workspace) return
+    const supabase = createClient()
+
+    // Optimistic update
+    setAgents(prev => prev.map(a => a.id === agent.id ? { ...a, status: 'running' as const } : a))
+
+    const { error } = await supabase.from('agent_runs').insert({
+      agent_id: agent.id,
+      workspace_id: workspace.id,
+      status: 'running',
+      triggered_by: 'manual',
+      started_at: new Date().toISOString(),
+    })
+
+    if (error) {
+      // Rollback optimistic update
+      setAgents(prev => prev.map(a => a.id === agent.id ? { ...a, status: agent.status } : a))
+      if (error.code === 'P0040') {
+        toastError('Agent is not runnable (archived or error state).')
+      } else if (error.code === 'P0001') {
+        toastError('Monthly event quota reached. Upgrade your plan.')
+      } else {
+        toastError(error)
+      }
+      return
     }
+
+    await supabase.from('agents').update({ status: 'running', last_run_at: new Date().toISOString() }).eq('id', agent.id)
+    toastSuccess(`Agent ${agent.name} started`)
   }
 
   async function handlePause(agent: DbAgent) {
-    const newStatus = agent.status === 'running' ? 'paused' : 'idle'
-    const res = await fetch(`/api/agents/${agent.id}/status`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: newStatus }),
-    })
-    if (res.ok) {
-      toastSuccess(agent.status === 'running' ? `Agent ${agent.name} paused` : `Agent ${agent.name} resumed`)
+    const newStatus = agent.status === 'paused' ? 'idle' : 'paused'
+    const supabase = createClient()
+    const { error } = await supabase.from('agents').update({ status: newStatus }).eq('id', agent.id)
+    if (!error) {
+      toastSuccess(agent.status === 'paused' ? `Agent ${agent.name} resumed` : `Agent ${agent.name} paused`)
       setAgents(prev => prev.map(a => a.id === agent.id ? { ...a, status: newStatus as DbAgent['status'] } : a))
+    } else {
+      toastError(error)
     }
   }
 
@@ -85,7 +105,12 @@ export function AgentStatusPanel() {
       </div>
       <div className="space-y-0.5 p-1.5">
         {activeAgents.length === 0 ? (
-          <div className="flex items-center justify-center py-12 text-[13px] text-text-tertiary">No agents configured</div>
+          <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
+            <Bot className="h-8 w-8 text-text-tertiary" />
+            <p className="text-[13px] font-medium text-text-primary">No agents yet</p>
+            <p className="text-[11px] text-text-secondary max-w-[200px]">Create your first agent to start automating.</p>
+            <Link href="/agents/new" className="mt-1 text-[12px] font-medium text-amber hover:text-amber-hover transition-colors">Create agent →</Link>
+          </div>
         ) : (
           activeAgents.map((agent) => (
             <div key={agent.id} className="flex flex-col gap-2 rounded-md p-2.5 transition-colors hover:bg-surface-3">

@@ -36,16 +36,20 @@ export function ApprovalPreview() {
 
   async function handleApprove(id: string) {
     setActionLoading(id)
-    const res = await fetch(`/api/approvals/${id}/review`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ decision: 'approved' }),
+    const supabase = createClient()
+    const { error } = await supabase.rpc('review_approval', {
+      p_approval_id: id,
+      p_decision: 'approved',
+      p_note: null,
+      p_edit_content: null,
     })
-    if (res.ok) {
+    if (error) {
+      if (error.code === 'P0006') toastError('This approval has already been resolved.')
+      else if (error.code === 'P0007') toastError('This approval has expired.')
+      else toastError(error)
+    } else {
       toastSuccess('Action approved')
       setApprovals(prev => prev.filter(a => a.id !== id))
-    } else {
-      toastError('Failed to approve')
     }
     setActionLoading(null)
   }

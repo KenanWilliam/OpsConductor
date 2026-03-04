@@ -1,6 +1,6 @@
 "use client"
 
-import { ChevronDown, ChevronUp } from "lucide-react"
+import { ChevronDown, ChevronUp, Activity } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useState } from "react"
 import { IntegrationLogo } from "@/components/integration-logo"
@@ -84,8 +84,10 @@ export function ActivityFeed({ maxItems }: { maxItems?: number }) {
         {displayed.length > 0 ? (
           displayed.map((event) => <EventRow key={event.id} event={event} />)
         ) : (
-          <div className="flex items-center justify-center py-12 text-[13px] text-text-tertiary">
-            No activity yet
+          <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
+            <Activity className="h-8 w-8 text-text-tertiary" />
+            <p className="text-[13px] font-medium text-text-primary">No activity yet</p>
+            <p className="text-[11px] text-text-secondary max-w-[200px]">Events will appear here once your agents start running.</p>
           </div>
         )}
       </div>

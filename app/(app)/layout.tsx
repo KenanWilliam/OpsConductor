@@ -2,6 +2,7 @@ import { AppSidebar } from "@/components/app-sidebar"
 import { CommandPalette } from "@/components/command-palette"
 import { NotificationBell } from "@/components/notification-bell"
 import { WorkspaceProvider } from "@/lib/hooks/use-workspace"
+import { TutorialOverlayClient } from "@/components/onboarding/TutorialOverlayClient"
 import { Toaster } from "sonner"
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -24,6 +25,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </main>
         </div>
         <CommandPalette />
+        <TutorialOverlayClient />
       </div>
       <Toaster theme="dark" position="bottom-right" richColors />
     </WorkspaceProvider>

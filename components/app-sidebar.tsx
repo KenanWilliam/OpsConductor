@@ -180,6 +180,7 @@ export function AppSidebar() {
                 key={item.href}
                 href={item.href}
                 onClick={() => setMobileOpen(false)}
+                data-tour={item.label === 'Integrations' ? 'integrations-nav' : undefined}
                 className={cn(
                   "group relative flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium transition-colors",
                   isActive ? "bg-surface-3 text-text-primary" : "text-text-secondary hover:bg-surface-3 hover:text-text-primary",
