@@ -10,35 +10,166 @@ import {
   Plug,
   Activity,
   Settings,
-  FileText,
-  Newspaper,
   ChevronLeft,
   ChevronRight,
+  Sun,
+  Moon,
+  User,
+  CreditCard,
+  LogOut,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 
 const primaryNav = [
-  { label: "Cockpit", href: "/cockpit", icon: LayoutDashboard },
-  { label: "Agents", href: "/agents", icon: Bot },
-  { label: "Approvals", href: "/approvals", icon: ShieldCheck, badge: 3 },
-  { label: "Workflows", href: "/workflows", icon: Workflow },
-  { label: "Integrations", href: "/integrations", icon: Plug },
-  { label: "Activity Log", href: "/activity", icon: Activity },
+  { label: "Cockpit", href: "/cockpit", icon: LayoutDashboard, kbd: "1" },
+  { label: "Agents", href: "/agents", icon: Bot, kbd: "2" },
+  { label: "Approvals", href: "/approvals", icon: ShieldCheck, badge: 3, kbd: "3" },
+  { label: "Workflows", href: "/workflows", icon: Workflow, kbd: "4" },
+  { label: "Integrations", href: "/integrations", icon: Plug, kbd: "5" },
+  { label: "Activity Log", href: "/activity", icon: Activity, kbd: "6" },
 ]
 
 const secondaryNav = [
   { label: "Settings", href: "/settings", icon: Settings },
 ]
 
+/* ── User Popover ─────────────────────────────────────────── */
+function UserPopover({ onClose }: { onClose: () => void }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [isDark, setIsDark] = useState(true)
+
+  useEffect(() => {
+    setIsDark(!document.documentElement.classList.contains("light"))
+  }, [])
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose()
+    }
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose()
+    }
+    document.addEventListener("mousedown", handleClick)
+    document.addEventListener("keydown", handleKey)
+    return () => {
+      document.removeEventListener("mousedown", handleClick)
+      document.removeEventListener("keydown", handleKey)
+    }
+  }, [onClose])
+
+  function toggleTheme() {
+    const next = !isDark
+    setIsDark(next)
+    if (next) {
+      document.documentElement.classList.remove("light")
+      localStorage.setItem("opsc-theme", "dark")
+    } else {
+      document.documentElement.classList.add("light")
+      localStorage.setItem("opsc-theme", "light")
+    }
+  }
+
+  const used = 2840
+  const limit = 10000
+  const pct = Math.round((used / limit) * 100)
+
+  return (
+    <div
+      ref={ref}
+      className="user-popover absolute bottom-full left-2 right-2 mb-2 rounded-xl border border-border-subtle bg-surface-2 p-3 shadow-xl"
+    >
+      {/* Identity */}
+      <div className="mb-3 flex items-center gap-2.5">
+        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-cyan/20 text-xs font-semibold text-cyan">
+          JD
+        </div>
+        <div className="flex flex-col">
+          <span className="text-sm font-medium text-text-primary">Jane Doe</span>
+          <span className="font-mono text-[11px] text-text-tertiary">jane@ops.co</span>
+        </div>
+      </div>
+
+      {/* Usage meter */}
+      <div className="mb-3 rounded-lg bg-surface-1 p-2.5">
+        <div className="mb-1.5 flex items-center justify-between">
+          <span className="text-[11px] font-medium text-text-secondary">Events this month</span>
+          <span className="font-mono text-[11px] text-text-tertiary">{pct}%</span>
+        </div>
+        <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-3">
+          <div
+            className="h-full rounded-full bg-cyan transition-all duration-500"
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+        <div className="mt-1 flex items-center justify-between">
+          <span className="font-mono text-[10px] text-text-tertiary">
+            {used.toLocaleString()} / {limit.toLocaleString()}
+          </span>
+          <span className="text-[10px] text-cyan">Operator Plan</span>
+        </div>
+      </div>
+
+      {/* Links */}
+      <div className="space-y-0.5">
+        <Link
+          href="/settings"
+          onClick={onClose}
+          className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary"
+        >
+          <User className="h-3.5 w-3.5" />
+          Profile
+        </Link>
+        <Link
+          href="/settings"
+          onClick={onClose}
+          className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary"
+        >
+          <CreditCard className="h-3.5 w-3.5" />
+          Billing
+        </Link>
+      </div>
+
+      <div className="my-2 border-t border-border-subtle" />
+
+      {/* Theme toggle */}
+      <button
+        onClick={toggleTheme}
+        className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary"
+      >
+        {isDark ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+        {isDark ? "Light mode" : "Dark mode"}
+      </button>
+
+      <div className="my-2 border-t border-border-subtle" />
+
+      {/* Sign out */}
+      <button className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary">
+        <LogOut className="h-3.5 w-3.5" />
+        Sign out
+      </button>
+    </div>
+  )
+}
+
+/* ── App Sidebar ──────────────────────────────────────────── */
 export function AppSidebar() {
   const pathname = usePathname()
   const [collapsed, setCollapsed] = useState(false)
+  const [popoverOpen, setPopoverOpen] = useState(false)
+
+  // Initialize theme from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem("opsc-theme")
+    if (saved === "light") {
+      document.documentElement.classList.add("light")
+    }
+  }, [])
 
   return (
     <aside
       className={cn(
-        "flex flex-col border-r border-border-subtle bg-surface-1 transition-all duration-200",
+        "relative flex flex-col border-r border-border-subtle bg-surface-1 transition-all duration-200",
         collapsed ? "w-14" : "w-60"
       )}
     >
@@ -47,13 +178,9 @@ export function AppSidebar() {
         "flex items-center gap-2 border-b border-border-subtle px-4 py-4",
         collapsed && "justify-center px-2"
       )}>
-        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-copper text-primary-foreground">
-          <LayoutDashboard className="h-4 w-4" />
-        </div>
+        <img src="/icon.svg" alt="OpsConductor" className="h-7 w-7 shrink-0" />
         {!collapsed && (
-          <span className="text-sm font-semibold text-text-primary">
-            OpsConductor
-          </span>
+          <img src="/brand/wordmark.svg" alt="OpsConductor" className="h-[22px]" />
         )}
       </div>
 
@@ -67,7 +194,7 @@ export function AppSidebar() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium transition-colors",
+                  "group relative flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium transition-colors",
                   isActive
                     ? "bg-surface-3 text-text-primary"
                     : "text-text-secondary hover:bg-surface-3 hover:text-text-primary",
@@ -78,11 +205,15 @@ export function AppSidebar() {
                 {!collapsed && (
                   <>
                     <span className="flex-1">{item.label}</span>
-                    {item.badge && (
+                    {item.badge ? (
                       <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-warning/20 px-1.5 font-mono text-[11px] font-semibold text-warning">
                         {item.badge}
                       </span>
-                    )}
+                    ) : item.kbd ? (
+                      <kbd className="hidden rounded border border-border-subtle bg-surface-1 px-1.5 py-0.5 font-mono text-[10px] text-text-tertiary opacity-0 transition-opacity group-hover:block group-hover:opacity-100">
+                        {item.kbd}
+                      </kbd>
+                    ) : null}
                   </>
                 )}
                 {collapsed && item.badge && (
@@ -121,7 +252,12 @@ export function AppSidebar() {
       </nav>
 
       {/* Footer */}
-      <div className="border-t border-border-subtle px-2 py-3">
+      <div className="relative border-t border-border-subtle px-2 py-3">
+        {/* Popover */}
+        {popoverOpen && !collapsed && (
+          <UserPopover onClose={() => setPopoverOpen(false)} />
+        )}
+
         {/* Collapse toggle */}
         <button
           onClick={() => setCollapsed(!collapsed)}
@@ -141,24 +277,23 @@ export function AppSidebar() {
         </button>
 
         {/* User */}
-        {!collapsed && (
-          <div className="mt-2 flex items-center gap-2.5 rounded-md px-2.5 py-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-surface-3 text-[11px] font-semibold text-text-primary">
-              JD
-            </div>
-            <div className="flex flex-col">
+        <button
+          onClick={() => setPopoverOpen((v) => !v)}
+          className={cn(
+            "mt-2 flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 transition-colors hover:bg-surface-3",
+            collapsed && "justify-center px-2"
+          )}
+        >
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-cyan/20 text-[11px] font-semibold text-cyan">
+            JD
+          </div>
+          {!collapsed && (
+            <div className="flex flex-col text-left">
               <span className="text-sm font-medium text-text-primary">Jane Doe</span>
               <span className="font-mono text-[11px] text-text-tertiary">Operator Plan</span>
             </div>
-          </div>
-        )}
-        {collapsed && (
-          <div className="mt-2 flex justify-center">
-            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-surface-3 text-[11px] font-semibold text-text-primary">
-              JD
-            </div>
-          </div>
-        )}
+          )}
+        </button>
       </div>
     </aside>
   )

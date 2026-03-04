@@ -149,7 +149,7 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
           <div className="rounded-lg border border-border-subtle bg-surface-1 p-4">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-[13px] font-semibold text-text-primary">Approval Rules</h3>
-              <button onClick={() => alert("Approval rules editor would open here.")} className="text-[11px] text-copper hover:text-copper-muted">Edit</button>
+              <button onClick={() => alert("Approval rules editor would open here.")} className="text-[11px] text-cyan hover:text-cyan-muted">Edit</button>
             </div>
             <div className="space-y-2">
               {approvalRules.map((rule) => (

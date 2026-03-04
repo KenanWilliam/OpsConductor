@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 100" fill="none">
+  <defs>
+    <radialGradient id="g" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#00C2FF" stop-opacity="0.14"/>
+      <stop offset="100%" stop-color="#00C2FF" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="f" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="1.5" result="b"/>
+      <feComposite in="SourceGraphic" in2="b" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Icon mark at 100×100 -->
+  <circle cx="50" cy="50" r="44" fill="url(#g)"/>
+  <circle cx="50" cy="50" r="43" stroke="#14141C" stroke-width="1.2" fill="none"/>
+  <path d="M 50 17 A 33 33 0 1 1 21.5 66.5"
+    stroke="#00C2FF" stroke-width="2.8" stroke-linecap="round" fill="none" filter="url(#f)"/>
+  <path d="M 50 28 A 22 22 0 1 1 30 66"
+    stroke="#00C2FF" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.45"/>
+  <circle cx="57" cy="44" r="10" fill="#00C2FF" opacity="0.08"/>
+  <circle cx="57" cy="44" r="7.5" fill="#07070A"/>
+  <circle cx="57" cy="44" r="7.5" stroke="#00C2FF" stroke-width="2.2" fill="none" filter="url(#f)"/>
+  <circle cx="57" cy="44" r="3.2" fill="#00C2FF"/>
+
+  <!-- Wordmark — starts at x=118 -->
+  <text x="118" y="67"
+    font-family="'DM Sans', -apple-system, sans-serif"
+    font-size="52" font-weight="200"
+    fill="#8888A0" letter-spacing="-1.5">Ops</text>
+
+  <circle cx="231" cy="25" r="3" fill="#00C2FF" opacity="0.35"/>
+  <circle cx="231" cy="50" r="4" fill="#00C2FF"/>
+  <circle cx="231" cy="75" r="3" fill="#00C2FF" opacity="0.35"/>
+
+  <text x="243" y="67"
+    font-family="'DM Sans', -apple-system, sans-serif"
+    font-size="52" font-weight="800"
+    fill="#EEEEF2" letter-spacing="-2.5">Conductor</text>
+</svg>

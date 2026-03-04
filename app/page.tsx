@@ -16,8 +16,11 @@ import {
   Menu,
   X,
   CheckCircle,
+  Sun,
+  Moon,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { BackgroundLayers } from "@/components/background-layers"
 
 /* ── Scroll-reveal hook ── */
 function useReveal() {
@@ -42,45 +45,58 @@ function useReveal() {
   return ref
 }
 
-/* ── Staggered word animation ── */
-function AnimatedHeadline() {
-  const lines = [
-    { words: ["One"], accent: null },
-    { words: ["cockpit."], accent: "cockpit." },
-    { words: ["Every"], accent: null },
-    { words: ["agent."], accent: null },
-    { words: ["Total"], accent: null },
-    { words: ["control."], accent: null },
-  ]
+/* ── Smooth anchor scrolling ── */
+function useSmoothAnchors() {
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      const anchor = (e.target as HTMLElement).closest('a[href^="#"]')
+      if (!anchor) return
+      e.preventDefault()
+      const href = anchor.getAttribute("href")
+      if (!href) return
+      const target = document.querySelector(href)
+      if (!target) return
+      const nav = document.querySelector("nav")
+      const navHeight = nav ? nav.offsetHeight : 64
+      const targetY = target.getBoundingClientRect().top + window.scrollY - navHeight - 24
+      window.scrollTo({ top: targetY, behavior: "smooth" })
+      history.pushState(null, "", href)
+    }
+    document.addEventListener("click", handleClick)
+    return () => document.removeEventListener("click", handleClick)
+  }, [])
+}
 
-  // Flatten: line1: "One cockpit." line2: "Every agent." line3: "Total control."
+/* ── Staggered word animation — Cluely signature ── */
+function AnimatedHeadline() {
+  // "Every agent. / One cockpit. / You decide."
   const line1 = [
-    { text: "One", isAccent: false },
-    { text: "cockpit.", isAccent: true },
-  ]
-  const line2 = [
     { text: "Every", isAccent: false },
     { text: "agent.", isAccent: false },
   ]
+  const line2 = [
+    { text: "One", isAccent: false },
+    { text: "cockpit.", isAccent: false },
+  ]
   const line3 = [
-    { text: "Total", isAccent: false },
-    { text: "control.", isAccent: false },
+    { text: "You", isAccent: false },
+    { text: "decide.", isAccent: true },
   ]
 
   const allLines = [line1, line2, line3]
   let wordIndex = 0
 
   return (
-    <h1 className="text-balance text-5xl font-extrabold leading-[1.08] tracking-[-0.04em] text-text-primary md:text-6xl lg:text-7xl">
+    <h1 className="text-balance font-extrabold leading-[1.08] tracking-[-0.04em] text-text-primary" style={{ fontSize: "clamp(58px, 8vw, 96px)" }}>
       {allLines.map((line, li) => (
         <span key={li} className="block">
           {line.map((word) => {
-            const delay = wordIndex * 60
+            const delay = wordIndex * 55
             wordIndex++
             return (
               <span
                 key={word.text}
-                className={cn("inline-block animate-word-in", word.isAccent && "accent-word")}
+                className={cn("hero-word", word.isAccent && "accent-word")}
                 style={{ animationDelay: `${delay}ms` }}
               >
                 {word.text}
@@ -94,43 +110,77 @@ function AnimatedHeadline() {
   )
 }
 
-/* ── Nav ── */
+/* ── Nav — Vercel-quality glassmorphic ── */
 function LandingNav() {
   const [open, setOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+  const [isDark, setIsDark] = useState(false)
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 80)
+    const stored = localStorage.getItem("opsc-theme")
+    const prefersDark = stored === "dark"
+    setIsDark(prefersDark)
+    if (prefersDark) {
+      document.documentElement.classList.add("dark")
+      document.documentElement.classList.remove("light")
+    } else {
+      document.documentElement.classList.add("light")
+      document.documentElement.classList.remove("dark")
+    }
+  }, [])
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 60)
     window.addEventListener("scroll", handleScroll, { passive: true })
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
+  function toggleTheme() {
+    const next = !isDark
+    setIsDark(next)
+    if (next) {
+      document.documentElement.classList.add("dark")
+      document.documentElement.classList.remove("light")
+      localStorage.setItem("opsc-theme", "dark")
+    } else {
+      document.documentElement.classList.remove("dark")
+      document.documentElement.classList.add("light")
+      localStorage.setItem("opsc-theme", "light")
+    }
+  }
+
   return (
     <nav
       className={cn(
-        "fixed top-0 left-0 right-0 z-50 border-b border-transparent bg-transparent transition-all duration-300",
+        "fixed top-0 left-0 right-0 z-50 border-b border-transparent bg-transparent transition-all duration-[350ms]",
         scrolled && "nav-scrolled"
       )}
     >
-      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-copper text-[#080809]">
-            <LayoutDashboard className="h-4 w-4" />
-          </div>
-          <span className="text-sm font-semibold text-text-primary">OpsConductor</span>
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6 md:px-10">
+        <Link href="/" className="flex items-center gap-2.5">
+          <img src="/icon.svg" alt="OpsConductor" className="h-7 w-7" />
+          <img src="/brand/wordmark.svg" alt="OpsConductor" className="h-[22px] hidden dark:block" />
+          <img src="/brand/wordmark-dark.svg" alt="OpsConductor" className="h-[22px] dark:hidden block" />
         </Link>
         <div className="hidden items-center gap-6 md:flex">
-          <a href="#problem" className="text-[13px] text-text-secondary transition-colors hover:text-text-primary">Why</a>
-          <a href="#how-it-works" className="text-[13px] text-text-secondary transition-colors hover:text-text-primary">How it works</a>
-          <a href="#pricing" className="text-[13px] text-text-secondary transition-colors hover:text-text-primary">Pricing</a>
+          <a href="#problem" className="nav-link">Why</a>
+          <a href="#how-it-works" className="nav-link">How it works</a>
+          <a href="#pricing" className="nav-link">Pricing</a>
         </div>
         <div className="hidden items-center gap-3 md:flex">
-          <Link href="/login" className="text-[13px] font-medium text-text-secondary transition-colors hover:text-text-primary">
+          <Link href="/login" className="nav-link">
             Log in
           </Link>
+          <button
+            onClick={toggleTheme}
+            className="flex h-8 w-8 items-center justify-center rounded-md text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary"
+            aria-label="Toggle theme"
+          >
+            {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </button>
           <Link
             href="/signup"
-            className="btn-primary rounded-md px-4 py-2 text-[13px] font-semibold"
+            className="btn-primary rounded-[7px] px-5 py-2 text-[14px]"
           >
             Get started
           </Link>
@@ -140,19 +190,26 @@ function LandingNav() {
         </button>
       </div>
       {open && (
-        <div className="flex flex-col gap-4 border-t border-[#1c1c20] bg-[#080809] px-6 py-4 md:hidden">
+        <div className="flex flex-col gap-4 border-t border-border-subtle bg-[var(--color-bg-base)] px-6 py-4 md:hidden">
           <a href="#problem" className="text-[13px] text-text-secondary">Why</a>
           <a href="#how-it-works" className="text-[13px] text-text-secondary">How it works</a>
           <a href="#pricing" className="text-[13px] text-text-secondary">Pricing</a>
           <Link href="/login" className="text-[13px] text-text-secondary">Log in</Link>
-          <Link href="/signup" className="btn-primary rounded-md px-4 py-2 text-center text-[13px] font-semibold">Get started</Link>
+          <button
+            onClick={toggleTheme}
+            className="flex items-center gap-2 text-[13px] text-text-secondary"
+          >
+            {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            {isDark ? "Light mode" : "Dark mode"}
+          </button>
+          <Link href="/signup" className="btn-primary rounded-[7px] px-4 py-2 text-center text-[13px] font-semibold">Get started</Link>
         </div>
       )}
     </nav>
   )
 }
 
-/* ── Cockpit Mockup ── */
+/* ── Cockpit Mockup — fully interactive HTML ── */
 function CockpitMockup() {
   const [liveEvent, setLiveEvent] = useState(false)
   const [approvalPulse, setApprovalPulse] = useState(false)
@@ -165,12 +222,12 @@ function CockpitMockup() {
 
   return (
     <div className="animate-mockup-in relative z-10 mx-auto mt-16 w-full max-w-5xl">
-      <div className="rounded-xl border border-[#1c1c20] bg-[#0f0f11] p-1 shadow-[0_8px_32px_rgba(0,0,0,0.6)]">
+      <div className="rounded-xl border border-border-subtle bg-surface-1 p-1 shadow-[0_8px_32px_rgba(0,0,0,0.6)]">
         {/* Browser chrome */}
-        <div className="flex items-center gap-1.5 border-b border-[#1c1c20] px-3 py-2">
-          <div className="h-2.5 w-2.5 rounded-full bg-[#2A2A30]" />
-          <div className="h-2.5 w-2.5 rounded-full bg-[#2A2A30]" />
-          <div className="h-2.5 w-2.5 rounded-full bg-[#2A2A30]" />
+        <div className="flex items-center gap-1.5 border-b border-border-subtle px-3 py-2">
+          <div className="h-2.5 w-2.5 rounded-full bg-text-disabled" />
+          <div className="h-2.5 w-2.5 rounded-full bg-text-disabled" />
+          <div className="h-2.5 w-2.5 rounded-full bg-text-disabled" />
           <span className="ml-3 font-mono text-[11px] text-text-tertiary">opsconductor.app/cockpit</span>
         </div>
         <div className="p-4">
@@ -182,7 +239,7 @@ function CockpitMockup() {
               { label: "Pending Approvals", value: "3", trend: "", color: "text-warning" },
               { label: "Agent Cost", value: "$4.89", trend: "", color: "text-text-tertiary" },
             ].map((stat) => (
-              <div key={stat.label} className="rounded-lg border border-[#1c1c20] bg-[#161618] p-3">
+              <div key={stat.label} className="rounded-lg border border-border-subtle bg-surface-2 p-3">
                 <p className="text-[10px] text-text-tertiary">{stat.label}</p>
                 <div className="mt-1 flex items-center gap-1.5">
                   <span className="text-sm font-semibold text-text-primary font-mono">{stat.value}</span>
@@ -193,7 +250,7 @@ function CockpitMockup() {
           </div>
           {/* Activity feed + agents */}
           <div className="grid grid-cols-1 gap-3 md:grid-cols-5">
-            <div className="md:col-span-3 rounded-lg border border-[#1c1c20] bg-[#161618] p-3">
+            <div className="md:col-span-3 rounded-lg border border-border-subtle bg-surface-2 p-3">
               <div className="mb-2 flex items-center justify-between">
                 <span className="text-[10px] font-semibold text-text-primary">Live Activity</span>
                 <div className="flex items-center gap-1">
@@ -203,7 +260,7 @@ function CockpitMockup() {
               </div>
               <div className="space-y-1.5">
                 {liveEvent && (
-                  <div className="animate-event-flash flex items-center gap-2 rounded-md bg-[#0f0f11] px-2 py-1.5">
+                  <div className="animate-event-flash flex items-center gap-2 rounded-md bg-surface-1 px-2 py-1.5">
                     <div className="h-1.5 w-1.5 rounded-full bg-success" />
                     <span className="text-[10px] font-medium text-text-primary">Lead Nurturer</span>
                     <span className="flex-1 truncate text-[10px] text-text-tertiary">Follow-up sent to Priya Sharma</span>
@@ -215,7 +272,7 @@ function CockpitMockup() {
                   { agent: "Churn Rescue", action: "Detected MRR drop for Globex Inc", time: "12m ago" },
                   { agent: "Lead Nurturer", action: "Sent follow-up email", time: "1h ago" },
                 ].map((evt, i) => (
-                  <div key={i} className="flex items-center gap-2 rounded-md bg-[#0f0f11] px-2 py-1.5">
+                  <div key={i} className="flex items-center gap-2 rounded-md bg-surface-1 px-2 py-1.5">
                     <div className="h-1.5 w-1.5 rounded-full bg-success" />
                     <span className="text-[10px] font-medium text-text-primary">{evt.agent}</span>
                     <span className="flex-1 truncate text-[10px] text-text-tertiary">{evt.action}</span>
@@ -225,7 +282,7 @@ function CockpitMockup() {
               </div>
             </div>
             <div className="md:col-span-2 space-y-3">
-              <div className="rounded-lg border border-[#1c1c20] bg-[#161618] p-3">
+              <div className="rounded-lg border border-border-subtle bg-surface-2 p-3">
                 <span className="text-[10px] font-semibold text-text-primary">Agent Status</span>
                 <div className="mt-2 space-y-1.5">
                   {[
@@ -233,10 +290,10 @@ function CockpitMockup() {
                     { name: "Churn Rescue", status: "running" },
                     { name: "Invoice Chaser", status: "idle" },
                   ].map((a) => (
-                    <div key={a.name} className="flex items-center gap-2 rounded-md bg-[#0f0f11] px-2 py-1.5">
+                    <div key={a.name} className="flex items-center gap-2 rounded-md bg-surface-1 px-2 py-1.5">
                       <div className={cn(
                         "h-1.5 w-1.5 rounded-full",
-                        a.status === "running" ? "bg-success" : "bg-[#2A2A30]"
+                        a.status === "running" ? "bg-success" : "bg-text-disabled"
                       )} />
                       <span className="text-[10px] text-text-primary">{a.name}</span>
                     </div>
@@ -245,8 +302,8 @@ function CockpitMockup() {
               </div>
               {/* Approval card */}
               <div className={cn(
-                "rounded-lg border bg-[#161618] p-3 transition-all",
-                approvalPulse ? "approval-pulse border-warning" : "border-[#1c1c20]"
+                "rounded-lg border bg-surface-2 p-3 transition-all",
+                approvalPulse ? "approval-pulse border-cyan" : "border-border-subtle"
               )}>
                 <div className="flex items-center gap-1.5 mb-2">
                   <ShieldCheck className="h-3 w-3 text-warning" />
@@ -270,11 +327,8 @@ function CockpitMockup() {
 function HeroSection() {
   return (
     <section className="relative flex flex-col items-center px-6 pt-32 pb-20 text-center md:pt-40 md:pb-28 overflow-hidden">
-      {/* Subtle top gradient glow */}
-      <div className="pointer-events-none absolute -top-32 left-1/2 -translate-x-1/2 h-[500px] w-[900px] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(242,107,58,0.06)_0%,transparent_65%)]" />
-
       <div className="relative z-10 mx-auto max-w-4xl">
-        <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#1c1c20] bg-[#0f0f11] px-3 py-1">
+        <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-border-subtle bg-surface-1 px-3 py-1">
           <div className="h-1.5 w-1.5 rounded-full bg-success status-running" />
           <span className="text-[11px] font-medium text-text-secondary">Now in beta</span>
         </div>
@@ -282,19 +336,20 @@ function HeroSection() {
         <AnimatedHeadline />
 
         <p className="mx-auto mt-6 max-w-xl text-pretty text-lg leading-[1.7] text-text-secondary">
-          Monitor, approve, and orchestrate your AI agents from one cockpit.
-          Your agents do the work. You keep control.
+          OpsConductor orchestrates your AI agents across Gmail, HubSpot,
+          Stripe, and Slack — with full visibility, and your approval
+          before anything consequential happens.
         </p>
         <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
           <Link
             href="/signup"
-            className="btn-primary flex items-center gap-2 rounded-md px-6 py-2.5 text-[13px] font-semibold"
+            className="btn-primary btn-link flex items-center gap-2 rounded-[7px] px-6 py-2.5 text-[14px]"
           >
-            Start for free <ArrowRight className="h-4 w-4" />
+            Start for free <span className="arrow"><ArrowRight className="h-4 w-4" /></span>
           </Link>
           <Link
             href="/cockpit"
-            className="flex items-center gap-2 rounded-md border border-[#26262c] bg-[#161618] px-6 py-2.5 text-[13px] font-semibold text-text-secondary transition-colors hover:text-text-primary"
+            className="btn-ghost flex items-center gap-2 px-6 py-2.5 text-[14px]"
           >
             View demo <ChevronRight className="h-4 w-4" />
           </Link>
@@ -331,7 +386,7 @@ function ProblemSection() {
           {
             icon: ShieldCheck,
             title: "No guardrails",
-            description: "Every action is auto-executed. No approval layer, no risk scoring, no way to say 'wait.'",
+            description: "Every action is auto-executed. No approval layer, no risk scoring, no way to say \u2018wait.\u2019",
           },
           {
             icon: Activity,
@@ -339,7 +394,7 @@ function ProblemSection() {
             description: "You can\u2019t trace why an agent took an action. No reasoning logs, no audit trail.",
           },
         ].map((item) => (
-          <div key={item.title} className="flex flex-col items-center gap-3 rounded-lg border border-[#1c1c20] bg-[#0f0f11] p-6">
+          <div key={item.title} className="flex flex-col items-center gap-3 rounded-lg border border-border-subtle bg-surface-1 p-6">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-danger/10">
               <item.icon className="h-5 w-5 text-danger" />
             </div>
@@ -396,13 +451,13 @@ function HowItWorksSection() {
         {steps.map((item) => (
           <div
             key={item.step}
-            className="group flex gap-4 rounded-lg border border-[#1c1c20] bg-[#0f0f11] p-5 transition-colors hover:border-[#26262c]"
+            className="group flex gap-4 rounded-lg border border-border-subtle bg-surface-1 p-5 transition-colors hover:border-border-base"
           >
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-copper-dim text-copper">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-cyan-dim text-cyan">
               <item.icon className="h-5 w-5" />
             </div>
             <div className="flex flex-col gap-1">
-              <span className="font-mono text-[11px] text-copper">{item.step}</span>
+              <span className="font-mono text-[11px] text-cyan">{item.step}</span>
               <h3 className="text-[15px] font-semibold text-text-primary">{item.title}</h3>
               <p className="text-[13px] leading-relaxed text-text-tertiary">{item.description}</p>
             </div>
@@ -435,7 +490,7 @@ function PricingSection() {
     },
     {
       name: "Operator",
-      price: "$49",
+      price: "$79",
       period: "/month",
       description: "For teams running real AI operations",
       features: [
@@ -452,7 +507,7 @@ function PricingSection() {
     },
     {
       name: "Team",
-      price: "$149",
+      price: "$249",
       period: "/month",
       description: "For growing organizations",
       features: [
@@ -488,18 +543,18 @@ function PricingSection() {
             className={cn(
               "flex flex-col rounded-xl border p-6 transition-all",
               plan.highlight
-                ? "border-copper/40 bg-surface-1 shadow-[0_0_40px_rgba(242,107,58,0.08)] md:scale-[1.03]"
+                ? "pricing-featured border-cyan/40 bg-surface-1 shadow-[0_0_40px_rgba(0,194,255,0.06)] md:scale-[1.03]"
                 : "border-border-subtle bg-surface-1"
             )}
           >
             {plan.highlight && (
-              <span className="mb-3 inline-flex self-start items-center rounded-full bg-copper-dim px-2.5 py-0.5 text-[11px] font-medium text-copper">
+              <span className="mb-3 inline-flex self-start items-center rounded-full bg-cyan-dim px-2.5 py-0.5 text-[11px] font-medium text-cyan">
                 Most popular
               </span>
             )}
             <h3 className="text-lg font-semibold text-text-primary">{plan.name}</h3>
             <div className="mt-2 flex items-baseline gap-1">
-              <span className="text-3xl font-bold text-text-primary">{plan.price}</span>
+              <span className="text-3xl font-bold text-text-primary font-mono">{plan.price}</span>
               <span className="text-[13px] text-text-tertiary">{plan.period}</span>
             </div>
             <p className="mt-2 text-[13px] text-text-secondary">{plan.description}</p>
@@ -514,10 +569,10 @@ function PricingSection() {
             <Link
               href={plan.href}
               className={cn(
-                "mt-6 block w-full rounded-md px-4 py-2.5 text-center text-[13px] font-semibold transition-all",
+                "mt-6 block w-full rounded-[7px] px-4 py-2.5 text-center text-[14px] font-semibold transition-all",
                 plan.highlight
                   ? "btn-primary"
-                  : "border border-[#26262c] bg-[#161618] text-text-primary hover:bg-[#1e1e22]"
+                  : "btn-ghost"
               )}
             >
               {plan.cta}
@@ -564,9 +619,9 @@ function WaitlistSection() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@company.com"
-              className="h-10 flex-1 rounded-md border border-border-base bg-surface-2 px-3 text-[13px] text-text-primary placeholder:text-text-tertiary focus:border-copper focus:shadow-[0_0_0_3px_rgba(242,107,58,0.12)] focus:outline-none"
+              className="h-10 flex-1 rounded-[7px] border border-border-base bg-surface-2 px-3 text-[13px] text-text-primary placeholder:text-text-tertiary focus:border-cyan focus:shadow-[0_0_0_3px_rgba(0,194,255,0.12)] focus:outline-none"
             />
-            <button type="submit" className="btn-primary h-10 rounded-md px-6 text-[13px] font-semibold">
+            <button type="submit" className="btn-primary h-10 rounded-[7px] px-6 text-[14px]">
               Join waitlist
             </button>
           </form>
@@ -582,35 +637,50 @@ function WaitlistSection() {
 /* ── Footer ── */
 function LandingFooter() {
   return (
-    <footer className="border-t border-[#1c1c20] px-6 py-8">
+    <footer className="border-t border-border-subtle px-6 py-8">
       <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 md:flex-row">
         <div className="flex items-center gap-2">
-          <div className="flex h-6 w-6 items-center justify-center rounded-md bg-copper text-[#080809]">
-            <LayoutDashboard className="h-3.5 w-3.5" />
-          </div>
-          <span className="text-[13px] font-semibold text-text-secondary">OpsConductor</span>
+          <img src="/icon.svg" alt="OpsConductor" className="h-6 w-6" />
+          <img src="/brand/wordmark.svg" alt="OpsConductor" className="h-5 hidden dark:block" />
+          <img src="/brand/wordmark-dark.svg" alt="OpsConductor" className="h-5 dark:hidden block" />
         </div>
         <div className="flex items-center gap-6">
-          <a href="#pricing" className="text-[13px] text-text-tertiary transition-colors hover:text-text-secondary">Pricing</a>
-          <Link href="/cockpit" className="text-[13px] text-text-tertiary transition-colors hover:text-text-secondary">Demo</Link>
-          <Link href="/login" className="text-[13px] text-text-tertiary transition-colors hover:text-text-secondary">Log in</Link>
+          <a href="#pricing" className="nav-link">Pricing</a>
+          <Link href="/cockpit" className="nav-link">Demo</Link>
+          <Link href="/login" className="nav-link">Log in</Link>
         </div>
-        <p className="text-[11px] text-text-tertiary">2026 OpsConductor. All rights reserved.</p>
+        <p className="text-[11px] text-text-tertiary">&copy; 2026 OpsConductor. All rights reserved.</p>
       </div>
     </footer>
   )
 }
 
 export default function LandingPage() {
+  useSmoothAnchors()
+
+  // Initialize theme from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem("opsc-theme")
+    if (saved === "light") {
+      document.documentElement.classList.add("light")
+    }
+  }, [])
+
   return (
-    <div className="min-h-screen bg-[#080809]">
-      <LandingNav />
-      <HeroSection />
-      <ProblemSection />
-      <HowItWorksSection />
-      <PricingSection />
-      <WaitlistSection />
-      <LandingFooter />
+    <div className="relative min-h-screen bg-[var(--color-bg-base)]">
+      {/* Background layers — dot grid, aurora, grain */}
+      <BackgroundLayers />
+
+      {/* Content */}
+      <div className="relative z-10">
+        <LandingNav />
+        <HeroSection />
+        <ProblemSection />
+        <HowItWorksSection />
+        <PricingSection />
+        <WaitlistSection />
+        <LandingFooter />
+      </div>
     </div>
   )
 }

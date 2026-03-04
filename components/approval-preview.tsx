@@ -37,7 +37,7 @@ export function ApprovalPreview() {
           <ShieldCheck className="h-4 w-4 text-warning" />
           <h3 className="text-[13px] font-semibold text-text-primary">Pending Approvals</h3>
         </div>
-        <Link href="/approvals" className="flex items-center gap-1 text-[11px] font-medium text-copper transition-colors hover:text-copper-muted">
+        <Link href="/approvals" className="flex items-center gap-1 text-[11px] font-medium text-cyan transition-colors hover:text-cyan-muted">
           View all <ArrowRight className="h-3 w-3" />
         </Link>
       </div>

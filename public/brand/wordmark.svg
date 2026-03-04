@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 96" fill="none">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@200;800&amp;display=swap');
+    </style>
+  </defs>
+  <!-- Ops — ultralight -->
+  <text x="0" y="62"
+    font-family="'DM Sans', -apple-system, sans-serif"
+    font-size="64" font-weight="200"
+    fill="#8888A0" letter-spacing="-2">Ops</text>
+
+  <!-- Three-dot separator — constellation motif -->
+  <circle cx="138" cy="18" r="3.5" fill="#00C2FF" opacity="0.35"/>
+  <circle cx="138" cy="40" r="4.5" fill="#00C2FF"/>
+  <circle cx="138" cy="62" r="3.5" fill="#00C2FF" opacity="0.35"/>
+
+  <!-- Conductor — heavy -->
+  <text x="152" y="62"
+    font-family="'DM Sans', -apple-system, sans-serif"
+    font-size="64" font-weight="800"
+    fill="#EEEEF2" letter-spacing="-3">Conductor</text>
+</svg>

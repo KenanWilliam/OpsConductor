@@ -21,7 +21,7 @@ function Sparkline({ data }: { data: number[] }) {
         strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"
-        className="text-copper"
+        className="text-cyan"
       />
     </svg>
   )
@@ -62,6 +62,10 @@ export function AgentStatusPanel() {
             <div className="flex items-center justify-between">
               <span className="text-[11px] text-text-tertiary">{agent.role}</span>
               <span className="font-mono text-[11px] text-text-tertiary">{agent.lastActive}</span>
+            </div>
+            {/* Last Run stat line */}
+            <div className="font-mono text-[10px] text-text-tertiary">
+              {agent.actionsPerWeek} actions · ${agent.costPerMonth} · {agent.lastActive} · {agent.status === "running" ? "1 approval" : "0 approvals"}
             </div>
             {agent.nextAction && (
               <div className="flex items-center gap-1.5 rounded bg-surface-2 px-2 py-1">

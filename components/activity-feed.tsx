@@ -16,7 +16,7 @@ import { useState } from "react"
 const appIcons: Record<string, { icon: React.ElementType; color: string }> = {
   Gmail: { icon: Mail, color: "text-danger" },
   HubSpot: { icon: BarChart3, color: "text-warning" },
-  Stripe: { icon: CreditCard, color: "text-copper" },
+  Stripe: { icon: CreditCard, color: "text-cyan" },
   Slack: { icon: MessageSquare, color: "text-info" },
   Notion: { icon: FileText, color: "text-text-secondary" },
 }
@@ -26,7 +26,7 @@ function StatusChip({ status }: { status: string }) {
     success: "bg-success/10 text-success",
     failed: "bg-danger/10 text-danger",
     pending: "bg-warning/10 text-warning",
-    running: "bg-copper-dim text-copper",
+    running: "bg-cyan-dim text-cyan",
   }
   return (
     <span className={cn(

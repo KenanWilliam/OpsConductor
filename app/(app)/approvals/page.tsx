@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { cn } from "@/lib/utils"
 import { pendingApprovals, recentApprovals, type Approval } from "@/lib/mock-data"
+import { EmptyState } from "@/components/empty-state"
 import {
   ShieldCheck,
   Check,
@@ -39,7 +40,7 @@ function StatusBadge({ status }: { status: Approval["status"] }) {
   const config: Record<string, { icon: React.ElementType; color: string; label: string }> = {
     approved: { icon: CheckCircle2, color: "text-success", label: "Approved" },
     rejected: { icon: XCircle, color: "text-danger", label: "Rejected" },
-    "auto-executed": { icon: Zap, color: "text-copper", label: "Auto-executed" },
+    "auto-executed": { icon: Zap, color: "text-cyan", label: "Auto-executed" },
     pending: { icon: Clock, color: "text-warning", label: "Pending" },
   }
   const c = config[status]
@@ -162,7 +163,7 @@ export default function ApprovalsPage() {
             className={cn(
               "flex items-center gap-1.5 border-b-2 px-3 pb-2.5 pt-1 text-[13px] font-medium transition-colors",
               activeTab === tab.key
-                ? "border-copper text-text-primary"
+                ? "border-cyan text-text-primary"
                 : "border-transparent text-text-tertiary hover:text-text-secondary"
             )}
           >
@@ -187,13 +188,18 @@ export default function ApprovalsPage() {
               onAction={handleAction}
             />
           ))
+        ) : activeTab === "pending" ? (
+          <EmptyState
+            headline="You're all caught up"
+            description="No agent actions waiting for your review."
+          />
         ) : (
           <div className="flex flex-col items-center gap-3 rounded-lg border border-border-subtle bg-surface-1 py-16">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-surface-2">
               <ShieldCheck className="h-6 w-6 text-text-tertiary" />
             </div>
             <p className="text-[13px] text-text-secondary">
-              {activeTab === "pending" ? "All caught up! No pending approvals." : `No ${activeTab} approvals to show.`}
+              No {activeTab} approvals to show.
             </p>
           </div>
         )}
