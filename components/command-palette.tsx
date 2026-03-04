@@ -7,7 +7,7 @@ import {
   Settings, Search, ArrowRight, FileText,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { agents } from "@/lib/mock-data"
+import { createClient } from "@/lib/supabase/client"
 
 interface CommandItem {
   id: string
@@ -33,19 +33,38 @@ export function CommandPalette() {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState("")
   const [selectedIndex, setSelectedIndex] = useState(0)
+  const [agentCommands, setAgentCommands] = useState<CommandItem[]>([])
   const inputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
 
+  // Fetch agents dynamically when palette opens
+  useEffect(() => {
+    if (!open) return
+    const supabase = createClient()
+    supabase
+      .from('agents')
+      .select('id, name, role')
+      .neq('status', 'archived')
+      .order('name')
+      .then(({ data }) => {
+        if (data) {
+          setAgentCommands(
+            data.map((agent) => ({
+              id: `agent-${agent.id}`,
+              label: agent.name,
+              description: agent.role || undefined,
+              icon: Bot,
+              category: "Agents",
+              href: `/agents/${agent.id}`,
+            }))
+          )
+        }
+      })
+  }, [open])
+
   // Build full command list including agents
   const allCommands: CommandItem[] = [
-    ...agents.map((agent) => ({
-      id: `agent-${agent.id}`,
-      label: agent.name,
-      description: agent.role,
-      icon: Bot,
-      category: "Agents",
-      href: `/agents/${agent.id}`,
-    })),
+    ...agentCommands,
     ...staticCommands,
   ]
 

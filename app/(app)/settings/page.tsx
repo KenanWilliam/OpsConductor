@@ -1,256 +1,267 @@
 "use client"
 
-import { useState } from "react"
-import Link from "next/link"
+import { useState, useEffect } from "react"
 import { cn } from "@/lib/utils"
+import { createClient } from "@/lib/supabase/client"
+import { useWorkspace } from "@/lib/hooks/use-workspace"
+import { toastSuccess, toastError } from "@/lib/supabase/errors"
 import {
-  Settings as SettingsIcon,
-  Building2,
-  Users,
-  CreditCard,
-  Bot,
-  Bell,
-  Shield,
-  AlertTriangle,
+  User, Building2, Shield, Loader2, Save, Trash2,
 } from "lucide-react"
 
-const settingsSections = [
-  { id: "general", label: "General", icon: Building2 },
-  { id: "members", label: "Members", icon: Users },
-  { id: "billing", label: "Billing", icon: CreditCard },
-  { id: "defaults", label: "Agent Defaults", icon: Bot },
-  { id: "notifications", label: "Notifications", icon: Bell },
-  { id: "security", label: "Security", icon: Shield },
-  { id: "danger", label: "Danger Zone", icon: AlertTriangle },
-]
+type SettingsTab = "profile" | "workspace" | "security"
 
 export default function SettingsPage() {
-  const [activeSection, setActiveSection] = useState("general")
-  const [saved, setSaved] = useState(false)
-  const [notifications, setNotifications] = useState([
-    { label: "Approval needed", description: "When an agent needs your approval", enabled: true },
-    { label: "Agent failed", description: "When an agent encounters an error", enabled: true },
-    { label: "Weekly summary", description: "Weekly digest of all agent activity", enabled: false },
-  ])
+  const { workspace, profile, refetch: refreshWorkspace } = useWorkspace()
+  const supabase = createClient()
 
-  function toggleNotification(index: number) {
-    setNotifications(prev => prev.map((n, i) => i === index ? { ...n, enabled: !n.enabled } : n))
+  const [tab, setTab] = useState<SettingsTab>("profile")
+  const [saving, setSaving] = useState(false)
+
+  // Profile form
+  const [displayName, setDisplayName] = useState("")
+  const [avatarUrl, setAvatarUrl] = useState("")
+
+  // Workspace form
+  const [wsName, setWsName] = useState("")
+  const [wsSlug, setWsSlug] = useState("")
+
+  // Security form
+  const [currentPassword, setCurrentPassword] = useState("")
+  const [newPassword, setNewPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+
+  useEffect(() => {
+    if (profile) {
+      setDisplayName(profile.full_name || "")
+      setAvatarUrl(profile.avatar_url || "")
+    }
+    if (workspace) {
+      setWsName(workspace.name || "")
+      setWsSlug(workspace.slug || "")
+    }
+  }, [profile, workspace])
+
+  async function saveProfile(e: React.FormEvent) {
+    e.preventDefault()
+    if (!profile) return
+    setSaving(true)
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        full_name: displayName.trim() || null,
+        avatar_url: avatarUrl.trim() || null,
+      })
+      .eq('id', profile.id)
+    setSaving(false)
+    if (error) toastError(error)
+    else {
+      toastSuccess('Profile updated')
+      refreshWorkspace()
+    }
   }
 
+  async function saveWorkspace(e: React.FormEvent) {
+    e.preventDefault()
+    if (!workspace) return
+    setSaving(true)
+    const { error } = await supabase
+      .from('workspaces')
+      .update({
+        name: wsName.trim(),
+        slug: wsSlug.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-'),
+      })
+      .eq('id', workspace.id)
+    setSaving(false)
+    if (error) toastError(error)
+    else {
+      toastSuccess('Workspace updated')
+      refreshWorkspace()
+    }
+  }
+
+  async function changePassword(e: React.FormEvent) {
+    e.preventDefault()
+    if (newPassword !== confirmPassword) {
+      toastError('Passwords do not match')
+      return
+    }
+    if (newPassword.length < 8) {
+      toastError('Password must be at least 8 characters')
+      return
+    }
+    setSaving(true)
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+    setSaving(false)
+    if (error) toastError(error)
+    else {
+      toastSuccess('Password updated')
+      setCurrentPassword("")
+      setNewPassword("")
+      setConfirmPassword("")
+    }
+  }
+
+  const TABS = [
+    { id: "profile" as const, label: "Profile", icon: User },
+    { id: "workspace" as const, label: "Workspace", icon: Building2 },
+    { id: "security" as const, label: "Security", icon: Shield },
+  ]
+
   return (
-    <div className="flex h-full">
-      {/* Settings Sidebar */}
-      <div className="w-52 shrink-0 border-r border-border-subtle bg-surface-1 p-3">
-        <div className="mb-4 flex items-center gap-2 px-2">
-          <SettingsIcon className="h-4 w-4 text-text-tertiary" />
-          <span className="text-[13px] font-semibold text-text-primary">Settings</span>
-        </div>
-        <nav className="space-y-0.5">
-          {settingsSections.map((section) => (
-            <button
-              key={section.id}
-              onClick={() => setActiveSection(section.id)}
-              className={cn(
-                "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-[13px] font-medium transition-colors",
-                activeSection === section.id
-                  ? "bg-surface-3 text-text-primary"
-                  : "text-text-secondary hover:bg-surface-3 hover:text-text-primary",
-                section.id === "danger" && "text-danger hover:text-danger"
-              )}
-            >
-              <section.icon className="h-3.5 w-3.5" />
-              {section.label}
-            </button>
-          ))}
-        </nav>
+    <div className="flex flex-col gap-5 p-6 max-w-2xl">
+      <div>
+        <h1 className="text-xl font-semibold text-text-primary">Settings</h1>
+        <p className="text-[13px] text-text-secondary">Manage your profile and workspace</p>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 p-6">
-        {activeSection === "general" && (
-          <div className="max-w-lg">
-            <h2 className="text-lg font-semibold text-text-primary">General</h2>
-            <p className="mb-6 text-[13px] text-text-secondary">Manage your workspace settings</p>
+      <div className="flex gap-1 border-b border-border-subtle">
+        {TABS.map(t => (
+          <button key={t.id} onClick={() => setTab(t.id)}
+            className={cn("flex items-center gap-1.5 px-3 py-2 text-[13px] font-medium border-b-2 -mb-px transition-colors",
+              tab === t.id ? "border-amber text-amber" : "border-transparent text-text-tertiary hover:text-text-secondary"
+            )}>
+            <t.icon className="h-3.5 w-3.5" /> {t.label}
+          </button>
+        ))}
+      </div>
 
-            <div className="space-y-4">
+      {/* Profile Tab */}
+      {tab === 'profile' && (
+        <form onSubmit={saveProfile} className="flex flex-col gap-5">
+          <fieldset className="flex flex-col gap-4 rounded-lg border border-border-subtle bg-surface-1 p-4">
+            <legend className="text-[13px] font-semibold text-text-primary px-1">Profile Information</legend>
+            <div>
+              <label className="mb-1.5 block text-[11px] font-medium text-text-secondary">Email</label>
+              <input type="text" readOnly value={profile?.id ? '' : ''}
+                className="h-9 w-full rounded-md border border-border-base bg-surface-2 px-3 text-[13px] text-text-tertiary cursor-not-allowed"
+                placeholder="Managed by authentication provider" />
+              <p className="mt-1 text-[10px] text-text-tertiary">Email cannot be changed here</p>
+            </div>
+            <div>
+              <label className="mb-1.5 block text-[11px] font-medium text-text-secondary">Display Name</label>
+              <input type="text" value={displayName} onChange={e => setDisplayName(e.target.value)}
+                className="h-9 w-full rounded-md border border-border-base bg-surface-1 px-3 text-[13px] text-text-primary focus:border-amber focus:outline-none"
+                placeholder="Your display name" />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-[11px] font-medium text-text-secondary">Avatar URL</label>
+              <input type="url" value={avatarUrl} onChange={e => setAvatarUrl(e.target.value)}
+                className="h-9 w-full rounded-md border border-border-base bg-surface-1 px-3 text-[13px] text-text-primary focus:border-amber focus:outline-none"
+                placeholder="https://..." />
+              {avatarUrl && (
+                <div className="mt-2 flex items-center gap-2">
+                  <img src={avatarUrl} alt="Avatar preview" className="h-8 w-8 rounded-full object-cover border border-border-subtle" onError={e => (e.currentTarget.style.display = 'none')} />
+                  <span className="text-[11px] text-text-tertiary">Preview</span>
+                </div>
+              )}
+            </div>
+          </fieldset>
+
+          <div className="flex items-center gap-3">
+            <button type="submit" disabled={saving}
+              className="flex items-center gap-2 rounded-md bg-amber px-5 py-2 text-[13px] font-semibold text-primary-foreground hover:bg-amber-hover disabled:opacity-50 transition-colors">
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              Save Profile
+            </button>
+          </div>
+        </form>
+      )}
+
+      {/* Workspace Tab */}
+      {tab === 'workspace' && (
+        <div className="flex flex-col gap-5">
+          <form onSubmit={saveWorkspace} className="flex flex-col gap-5">
+            <fieldset className="flex flex-col gap-4 rounded-lg border border-border-subtle bg-surface-1 p-4">
+              <legend className="text-[13px] font-semibold text-text-primary px-1">Workspace Settings</legend>
               <div>
                 <label className="mb-1.5 block text-[11px] font-medium text-text-secondary">Workspace Name</label>
-                <input
-                  type="text"
-                  defaultValue="Acme Operations"
-                  className="h-9 w-full rounded-md border border-border-base bg-surface-1 px-3 text-[13px] text-text-primary focus:border-amber focus:shadow-[0_0_0_3px_var(--color-accent-dim)] focus:outline-none"
-                />
+                <input type="text" value={wsName} onChange={e => setWsName(e.target.value)} required
+                  className="h-9 w-full rounded-md border border-border-base bg-surface-1 px-3 text-[13px] text-text-primary focus:border-amber focus:outline-none" />
               </div>
               <div>
-                <label className="mb-1.5 block text-[11px] font-medium text-text-secondary">Timezone</label>
-                <select className="h-9 w-full rounded-md border border-border-base bg-surface-1 px-3 text-[13px] text-text-primary focus:border-amber focus:outline-none">
-                  <option>America/New_York (EST)</option>
-                  <option>America/Los_Angeles (PST)</option>
-                  <option>Europe/London (GMT)</option>
-                  <option>Asia/Tokyo (JST)</option>
-                </select>
+                <label className="mb-1.5 block text-[11px] font-medium text-text-secondary">Slug</label>
+                <input type="text" value={wsSlug} onChange={e => setWsSlug(e.target.value)}
+                  className="h-9 w-full rounded-md border border-border-base bg-surface-1 px-3 font-mono text-[13px] text-text-primary focus:border-amber focus:outline-none"
+                  placeholder="my-workspace" />
               </div>
-              <button onClick={() => { setSaved(true); setTimeout(() => setSaved(false), 2000) }} className="rounded-md bg-amber px-4 py-2 text-[13px] font-semibold text-primary-foreground transition-colors hover:bg-amber-hover">
-                {saved ? "Saved ✓" : "Save Changes"}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {activeSection === "members" && (
-          <div>
-            <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-lg font-semibold text-text-primary">Members</h2>
-                <p className="text-[13px] text-text-secondary">Manage who has access to this workspace</p>
+                <label className="mb-1.5 block text-[11px] font-medium text-text-secondary">Plan</label>
+                <div className="flex items-center gap-2">
+                  <span className={cn("rounded-full px-2.5 py-0.5 text-[11px] font-bold",
+                    workspace?.plan === 'scale' ? "bg-amber/15 text-amber" :
+                    workspace?.plan === 'pro' ? "bg-blue-400/15 text-blue-400" :
+                    "bg-surface-2 text-text-tertiary"
+                  )}>
+                    {workspace?.plan || 'free'}
+                  </span>
+                  <span className="text-[11px] text-text-tertiary">
+                    {workspace?.agent_limit ? `${workspace.agent_limit} agent limit` : 'Unlimited agents'}
+                  </span>
+                </div>
               </div>
-              <button onClick={() => alert("Invite link copied to clipboard!")} className="rounded-md bg-amber px-4 py-2 text-[13px] font-semibold text-primary-foreground transition-colors hover:bg-amber-hover">
-                Invite Member
-              </button>
-            </div>
-
-            <div className="mt-6 overflow-hidden rounded-lg border border-border-subtle bg-surface-1">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-border-subtle">
-                    <th className="px-3 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-text-tertiary">Name</th>
-                    <th className="px-3 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-text-tertiary">Email</th>
-                    <th className="px-3 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-text-tertiary">Role</th>
-                    <th className="px-3 py-2.5 text-left text-[11px] font-medium uppercase tracking-wider text-text-tertiary">Last Active</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border-subtle">
-                  <tr className="hover:bg-surface-3">
-                    <td className="px-3 py-3 text-[13px] font-medium text-text-primary">Jane Doe</td>
-                    <td className="px-3 py-3 text-[13px] text-text-secondary">jane@acme.com</td>
-                    <td className="px-3 py-3"><span className="rounded bg-amber-dim px-1.5 py-0.5 text-[11px] font-medium text-amber">Admin</span></td>
-                    <td className="px-3 py-3 font-mono text-[11px] text-text-tertiary">Just now</td>
-                  </tr>
-                  <tr className="hover:bg-surface-3">
-                    <td className="px-3 py-3 text-[13px] font-medium text-text-primary">John Smith</td>
-                    <td className="px-3 py-3 text-[13px] text-text-secondary">john@acme.com</td>
-                    <td className="px-3 py-3"><span className="rounded bg-surface-2 px-1.5 py-0.5 text-[11px] font-medium text-text-secondary">Member</span></td>
-                    <td className="px-3 py-3 font-mono text-[11px] text-text-tertiary">2 hours ago</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {activeSection === "billing" && (
-          <div className="max-w-lg">
-            <h2 className="text-lg font-semibold text-text-primary">Billing</h2>
-            <p className="mb-6 text-[13px] text-text-secondary">Manage your plan and billing</p>
-            <div className="rounded-lg border border-amber bg-amber-dim p-4">
-              <div className="flex items-center justify-between">
+              {workspace?.monthly_cost_limit_usd && (
                 <div>
-                  <p className="text-[13px] font-semibold text-text-primary">Operator Plan</p>
-                  <p className="text-[11px] text-text-secondary">$79/mo -- 10 agents, unlimited events</p>
+                  <label className="mb-1.5 block text-[11px] font-medium text-text-secondary">Monthly Cost Limit</label>
+                  <span className="text-[13px] text-text-primary font-mono">${workspace.monthly_cost_limit_usd}</span>
                 </div>
-                <button onClick={() => alert("Redirecting to billing portal...")} className="rounded-md border border-border-base bg-surface-2 px-3 py-1.5 text-[11px] font-medium text-text-secondary hover:text-text-primary">
-                  Manage Plan
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+              )}
+            </fieldset>
 
-        {activeSection === "defaults" && (
-          <div className="max-w-lg">
-            <h2 className="text-lg font-semibold text-text-primary">Agent Defaults</h2>
-            <p className="mb-6 text-[13px] text-text-secondary">Default approval rules applied to new agents</p>
-            <div className="space-y-3">
-              {["Send email", "Update CRM", "Create deal", "Post to Slack", "Send invoice"].map((action) => (
-                <div key={action} className="flex items-center justify-between rounded-md border border-border-subtle bg-surface-1 px-3 py-2.5">
-                  <span className="text-[13px] text-text-primary">{action}</span>
-                  <select className="rounded border border-border-base bg-surface-2 px-2 py-1 text-[11px] text-text-secondary focus:outline-none">
-                    <option>Ask me</option>
-                    <option>Auto</option>
-                    <option>Always ask</option>
-                  </select>
-                </div>
-              ))}
+            <div className="flex items-center gap-3">
+              <button type="submit" disabled={saving || !wsName.trim()}
+                className="flex items-center gap-2 rounded-md bg-amber px-5 py-2 text-[13px] font-semibold text-primary-foreground hover:bg-amber-hover disabled:opacity-50 transition-colors">
+                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                Save Workspace
+              </button>
             </div>
-          </div>
-        )}
+          </form>
 
-        {activeSection === "notifications" && (
-          <div className="max-w-lg">
-            <h2 className="text-lg font-semibold text-text-primary">Notifications</h2>
-            <p className="mb-6 text-[13px] text-text-secondary">Configure when and how you receive notifications</p>
-            <div className="space-y-3">
-              {notifications.map((pref, index) => (
-                <div key={pref.label} className="flex items-center justify-between rounded-md border border-border-subtle bg-surface-1 px-3 py-3">
-                  <div>
-                    <p className="text-[13px] font-medium text-text-primary">{pref.label}</p>
-                    <p className="text-[11px] text-text-tertiary">{pref.description}</p>
-                  </div>
-                  <button
-                    onClick={() => toggleNotification(index)}
-                    className={cn(
-                      "h-5 w-9 rounded-full transition-colors relative cursor-pointer",
-                      pref.enabled ? "bg-amber" : "bg-surface-3"
-                    )}
-                  >
-                    <div className={cn(
-                      "absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform",
-                      pref.enabled ? "translate-x-4" : "translate-x-0.5"
-                    )} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+          {/* Danger Zone */}
+          <fieldset className="flex flex-col gap-3 rounded-lg border border-red-400/30 bg-red-400/5 p-4">
+            <legend className="text-[13px] font-semibold text-red-400 px-1">Danger Zone</legend>
+            <p className="text-[12px] text-text-secondary">Deleting your workspace is permanent and cannot be undone. All agents, integrations, and data will be destroyed.</p>
+            <button disabled
+              className="flex items-center gap-1.5 self-start rounded-md border border-red-400/30 bg-red-400/10 px-3 py-1.5 text-[12px] font-medium text-red-400 opacity-60 cursor-not-allowed">
+              <Trash2 className="h-3.5 w-3.5" /> Delete Workspace
+            </button>
+            <p className="text-[10px] text-text-tertiary">Contact support to delete your workspace</p>
+          </fieldset>
+        </div>
+      )}
 
-        {activeSection === "security" && (
-          <div className="max-w-lg">
-            <h2 className="text-lg font-semibold text-text-primary">Security</h2>
-            <p className="mb-6 text-[13px] text-text-secondary">API keys and audit log settings</p>
-            <div className="space-y-4">
-              <div className="rounded-lg border border-border-subtle bg-surface-1 p-4">
-                <h3 className="mb-2 text-[13px] font-semibold text-text-primary">API Keys</h3>
-                <p className="mb-3 text-[11px] text-text-tertiary">Generate keys for programmatic access</p>
-                <button onClick={() => alert("API Key: ops_sk_demo_" + Math.random().toString(36).slice(2, 14))} className="rounded-md bg-amber px-3 py-1.5 text-[11px] font-semibold text-primary-foreground transition-colors hover:bg-amber-hover">
-                  Generate New Key
-                </button>
-              </div>
-              <div className="rounded-lg border border-border-subtle bg-surface-1 p-4">
-                <h3 className="mb-2 text-[13px] font-semibold text-text-primary">Data Retention</h3>
-                <select className="h-9 w-full rounded-md border border-border-base bg-surface-2 px-3 text-[13px] text-text-secondary focus:outline-none">
-                  <option>30 days</option>
-                  <option>90 days</option>
-                  <option>365 days</option>
-                </select>
-              </div>
+      {/* Security Tab */}
+      {tab === 'security' && (
+        <form onSubmit={changePassword} className="flex flex-col gap-5">
+          <fieldset className="flex flex-col gap-4 rounded-lg border border-border-subtle bg-surface-1 p-4">
+            <legend className="text-[13px] font-semibold text-text-primary px-1">Change Password</legend>
+            <div>
+              <label className="mb-1.5 block text-[11px] font-medium text-text-secondary">New Password</label>
+              <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} minLength={8} required
+                className="h-9 w-full rounded-md border border-border-base bg-surface-1 px-3 text-[13px] text-text-primary focus:border-amber focus:outline-none"
+                placeholder="Minimum 8 characters" />
             </div>
-          </div>
-        )}
+            <div>
+              <label className="mb-1.5 block text-[11px] font-medium text-text-secondary">Confirm Password</label>
+              <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} minLength={8} required
+                className={cn("h-9 w-full rounded-md border bg-surface-1 px-3 text-[13px] text-text-primary focus:outline-none",
+                  confirmPassword && confirmPassword !== newPassword ? "border-red-400 focus:border-red-400" : "border-border-base focus:border-amber"
+                )} />
+              {confirmPassword && confirmPassword !== newPassword && (
+                <p className="mt-1 text-[10px] text-red-400">Passwords do not match</p>
+              )}
+            </div>
+          </fieldset>
 
-        {activeSection === "danger" && (
-          <div className="max-w-lg">
-            <h2 className="text-lg font-semibold text-danger">Danger Zone</h2>
-            <p className="mb-6 text-[13px] text-text-secondary">Irreversible actions for your workspace</p>
-            <div className="space-y-3">
-              <div className="rounded-lg border border-danger/30 bg-danger/5 p-4">
-                <h3 className="text-[13px] font-semibold text-text-primary">Transfer Ownership</h3>
-                <p className="mb-3 text-[11px] text-text-tertiary">Transfer this workspace to another member</p>
-                <button onClick={() => { if (confirm("Are you sure you want to transfer workspace ownership?")) alert("Transfer initiated.") }} className="rounded-md border border-danger bg-danger/10 px-3 py-1.5 text-[11px] font-semibold text-danger hover:bg-danger/20">
-                  Transfer Workspace
-                </button>
-              </div>
-              <div className="rounded-lg border border-danger/30 bg-danger/5 p-4">
-                <h3 className="text-[13px] font-semibold text-text-primary">Delete Workspace</h3>
-                <p className="mb-3 text-[11px] text-text-tertiary">Permanently delete this workspace and all data</p>
-                <button onClick={() => { if (confirm("This action is irreversible. Delete this workspace and all data?")) alert("Workspace deleted.") }} className="rounded-md bg-danger px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-danger/90">
-                  Delete Workspace
-                </button>
-              </div>
-            </div>
+          <div className="flex items-center gap-3">
+            <button type="submit" disabled={saving || !newPassword || newPassword !== confirmPassword}
+              className="flex items-center gap-2 rounded-md bg-amber px-5 py-2 text-[13px] font-semibold text-primary-foreground hover:bg-amber-hover disabled:opacity-50 transition-colors">
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Shield className="h-4 w-4" />}
+              Update Password
+            </button>
           </div>
-        )}
-      </div>
+        </form>
+      )}
     </div>
   )
 }
