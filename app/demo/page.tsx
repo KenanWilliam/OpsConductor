@@ -45,18 +45,29 @@ import { toast, Toaster } from "sonner"
 /* ── Demo Banner ── */
 function DemoBanner() {
   return (
-    <div className="flex items-center justify-center gap-3 bg-amber/10 border-b border-amber/20 px-4 py-2">
-      <div className="h-1.5 w-1.5 rounded-full bg-amber status-pending" />
-      <span className="text-[12px] font-medium text-amber font-mono">
-        DEMO MODE — Viewing the Acme Corp workspace with simulated data
-      </span>
-      <Link
-        href="/signup"
-        className="ml-2 rounded-md bg-amber px-3 py-1 text-[11px] font-semibold text-primary-foreground transition-colors hover:bg-amber-hover"
-        aria-label="Sign up for free"
-      >
-        Sign up free
-      </Link>
+    <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3 bg-amber/10 border-b border-amber/20 px-4 py-2">
+      <div className="flex items-center gap-3">
+        <div className="h-1.5 w-1.5 rounded-full bg-amber status-pending" />
+        <span className="text-[12px] font-medium text-amber font-mono">
+          DEMO MODE — Viewing the Acme Corp workspace with simulated data
+        </span>
+      </div>
+      <div className="flex items-center gap-2">
+        <Link
+          href="/signup"
+          className="rounded-md bg-amber px-3 py-1 text-[11px] font-semibold text-primary-foreground transition-colors hover:bg-amber-hover"
+          aria-label="Sign up for free"
+        >
+          Sign up free
+        </Link>
+        <Link
+          href="/demo/enterprise"
+          className="rounded-md border border-amber/30 bg-transparent px-3 py-1 text-[11px] font-semibold text-amber transition-colors hover:bg-amber/10"
+          aria-label="Request enterprise demo"
+        >
+          Enterprise demo
+        </Link>
+      </div>
     </div>
   )
 }

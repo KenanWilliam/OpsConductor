@@ -21,6 +21,8 @@ app/api/agents/[id]/run/route.ts
 app/api/agents/[id]/status/route.ts
 app/api/approvals/[id]/review/route.ts
 app/api/cron/keepalive/route.ts
+app/api/oauth/authorize/route.ts
+app/api/oauth/callback/route.ts
 app/api/webhooks/[agentId]/route.ts
 app/api/workspace/provision/route.ts
 app/api/workspace/stats/route.ts
@@ -47,8 +49,11 @@ components/integration-logo.tsx
 components/json-viewer.tsx
 components/kbd-hint.tsx
 components/notification-bell.tsx
+components/onboarding/TutorialOverlay.tsx
+components/onboarding/TutorialOverlayClient.tsx
 components/risk-badge.tsx
 components/skeleton-loader.tsx
+components/stripe-key-modal.tsx
 components/theme-provider.tsx
 components/time-ago.tsx
 components/ui/accordion.tsx
@@ -183,7 +188,7 @@ import { JsonViewer } from "@/components/json-viewer"
 import type { DbEvent } from "@/lib/types"
 import {
   Search, Filter, Download, Loader2, ChevronDown, ChevronRight,
-  Radio, CircleOff, X,
+  Radio, CircleOff, X, Activity,
 } from "lucide-react"
 
 const PAGE_SIZE = 50
@@ -370,10 +375,35 @@ export default function ActivityPage() {
 
       {/* Event table */}
       {loading ? (
-        <div className="flex items-center justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-text-tertiary" /></div>
+        <div className="overflow-hidden rounded-lg border border-border-subtle bg-surface-1">
+          <div className="border-b border-border-subtle bg-surface-2 px-4 py-2.5">
+            <div className="flex gap-8">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="h-3 w-16 animate-pulse rounded bg-surface-3" />
+              ))}
+            </div>
+          </div>
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-4 border-b border-border-subtle px-4 py-3 last:border-0">
+              <div className="h-4 w-4 animate-pulse rounded bg-surface-3" />
+              <div className="h-3 w-40 animate-pulse rounded bg-surface-3" />
+              <div className="h-3 w-20 animate-pulse rounded bg-surface-3" />
+              <div className="h-3 w-16 animate-pulse rounded bg-surface-3" />
+              <div className="h-5 w-14 animate-pulse rounded-full bg-surface-3" />
+              <div className="h-5 w-12 animate-pulse rounded-full bg-surface-3" />
+              <div className="ml-auto h-3 w-16 animate-pulse rounded bg-surface-3" />
+            </div>
+          ))}
+        </div>
       ) : events.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 gap-2">
-          <p className="text-text-secondary text-[13px]">No events found</p>
+        <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-border-subtle bg-surface-1 px-6 py-12 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber/10">
+            <Activity className="h-6 w-6 text-amber" />
+          </div>
+          <h3 className="text-[15px] font-semibold text-text-primary">No activity yet</h3>
+          <p className="max-w-xs text-[13px] text-text-secondary">
+            Events will appear here once your agents start running.
+          </p>
         </div>
       ) : (
         <>
@@ -669,7 +699,7 @@ export default function NewAgentPage() {
         </fieldset>
 
         {/* Approval Settings */}
-        <fieldset className="flex flex-col gap-4 rounded-lg border border-border-subtle bg-surface-1 p-4">
+        <fieldset data-tour="approval-mode-field" className="flex flex-col gap-4 rounded-lg border border-border-subtle bg-surface-1 p-4">
           <legend className="text-[13px] font-semibold text-text-primary px-1">Approval Settings</legend>
           <div className="flex flex-col gap-2">
             {[
@@ -790,25 +820,45 @@ export default function AgentsPage() {
   }, [workspace?.id])
 
   async function handleRunNow(agent: DbAgent) {
-    const res = await fetch(`/api/agents/${agent.id}/run`, { method: 'POST' })
-    if (res.ok) {
-      toastSuccess(`Agent ${agent.name} started`)
-      setAgents(prev => prev.map(a => a.id === agent.id ? { ...a, status: 'running' as const, run_count: a.run_count + 1 } : a))
-    } else {
-      toastError('Failed to start agent')
+    if (!workspace?.id) return
+    const supabase = createClient()
+
+    // Optimistic update
+    setAgents(prev => prev.map(a => a.id === agent.id ? { ...a, status: 'running' as const, run_count: a.run_count + 1 } : a))
+
+    const { error } = await supabase.from('agent_runs').insert({
+      agent_id: agent.id,
+      workspace_id: workspace.id,
+      status: 'running',
+      triggered_by: 'manual',
+      started_at: new Date().toISOString(),
+    })
+
+    if (error) {
+      setAgents(prev => prev.map(a => a.id === agent.id ? { ...a, status: agent.status, run_count: a.run_count - 1 } : a))
+      if (error.code === 'P0040') {
+        toastError('Agent is not runnable (archived or error state).')
+      } else if (error.code === 'P0001') {
+        toastError('Monthly event quota reached. Upgrade your plan.')
+      } else {
+        toastError(error)
+      }
+      return
     }
+
+    await supabase.from('agents').update({ status: 'running', last_run_at: new Date().toISOString() }).eq('id', agent.id)
+    toastSuccess(`Agent ${agent.name} started`)
   }
 
   async function handleTogglePause(agent: DbAgent) {
     const newStatus = agent.status === 'running' ? 'paused' : 'idle'
-    const res = await fetch(`/api/agents/${agent.id}/status`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: newStatus }),
-    })
-    if (res.ok) {
+    const supabase = createClient()
+    const { error } = await supabase.from('agents').update({ status: newStatus }).eq('id', agent.id)
+    if (!error) {
       toastSuccess(agent.status === 'running' ? `${agent.name} paused` : `${agent.name} resumed`)
       setAgents(prev => prev.map(a => a.id === agent.id ? { ...a, status: newStatus as DbAgent['status'] } : a))
+    } else {
+      toastError(error)
     }
   }
 
@@ -828,7 +878,7 @@ export default function AgentsPage() {
           <h1 className="text-xl font-semibold text-text-primary">Agents</h1>
           <p className="text-[13px] text-text-secondary">{agents.length} agents configured</p>
         </div>
-        <Link href="/agents/new" className="flex items-center gap-2 rounded-md bg-amber px-4 py-2 text-[13px] font-semibold text-primary-foreground transition-colors hover:bg-amber-hover">
+        <Link href="/agents/new" data-tour="new-agent-button" className="flex items-center gap-2 rounded-md bg-amber px-4 py-2 text-[13px] font-semibold text-primary-foreground transition-colors hover:bg-amber-hover">
           <Plus className="h-4 w-4" />
           New Agent
         </Link>
@@ -1586,11 +1636,34 @@ export default function ApprovalsPage() {
 
       {/* List */}
       {loading ? (
-        <div className="flex items-center justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-text-tertiary" /></div>
+        <div className="flex flex-col gap-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="animate-pulse rounded-lg border border-border-subtle bg-surface-1 p-4">
+              <div className="flex items-center gap-3">
+                <div className="h-4 w-4 rounded bg-surface-3" />
+                <div className="flex-1">
+                  <div className="h-4 w-48 rounded bg-surface-3 mb-2" />
+                  <div className="h-3 w-32 rounded bg-surface-3" />
+                </div>
+                <div className="flex gap-1.5">
+                  <div className="h-7 w-20 rounded-md bg-surface-3" />
+                  <div className="h-7 w-16 rounded-md bg-surface-3" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       ) : approvals.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 gap-2">
-          <CheckCircle className="h-10 w-10 text-text-tertiary" />
-          <p className="text-text-secondary text-[13px]">{tab === 'pending' ? 'No pending approvals' : 'No approvals found'}</p>
+        <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-border-subtle bg-surface-1 px-6 py-12 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-success/10">
+            <CheckCircle className="h-6 w-6 text-success" />
+          </div>
+          <h3 className="text-[15px] font-semibold text-text-primary">
+            {tab === 'pending' ? "You're all caught up" : 'No approvals found'}
+          </h3>
+          <p className="max-w-xs text-[13px] text-text-secondary">
+            {tab === 'pending' ? 'No actions waiting for review.' : 'No approvals match your current view.'}
+          </p>
         </div>
       ) : (
         <div className="flex flex-col gap-3">
@@ -2149,18 +2222,30 @@ export default function CockpitPage() {
 <![CDATA[
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, Suspense } from "react"
+import { useSearchParams } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 import { useWorkspace } from "@/lib/hooks/use-workspace"
 import { toastSuccess, toastError } from "@/lib/supabase/errors"
 import { IntegrationLogo } from "@/components/integration-logo"
 import { TimeAgo } from "@/components/time-ago"
+import { SkeletonLoader } from "@/components/skeleton-loader"
+import { EmptyState } from "@/components/empty-state"
+import { StripeKeyModal } from "@/components/stripe-key-modal"
 import type { DbIntegration } from "@/lib/types"
 type Integration = DbIntegration
 import {
-  Plug, CheckCircle, Plus, Loader2, Trash2, ExternalLink,
+  Plug, CheckCircle, Plus, Loader2, Trash2, ExternalLink, Key,
 } from "lucide-react"
+
+/* OAuth-capable providers that redirect to /api/oauth/authorize */
+const OAUTH_PROVIDERS = new Set([
+  'gmail', 'slack', 'hubspot', 'github', 'linear', 'notion',
+])
+
+/* Providers that use an API-key modal instead of OAuth */
+const API_KEY_PROVIDERS = new Set(['stripe'])
 
 const ALL_PROVIDERS = [
   { provider: "slack", label: "Slack", category: "Communication", description: "Send messages, create channels, post agent updates" },
@@ -2184,15 +2269,53 @@ const ALL_PROVIDERS = [
 
 type ViewFilter = "all" | "connected" | "available"
 
+/** Wrapper with Suspense boundary for useSearchParams */
 export default function IntegrationsPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col gap-5 p-6">
+        <div className="flex items-center gap-2">
+          <Plug className="h-5 w-5 text-amber" />
+          <h1 className="text-xl font-semibold text-text-primary">Integrations</h1>
+        </div>
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="animate-pulse rounded-lg border border-border-subtle bg-surface-1 p-4">
+              <div className="flex items-center gap-2.5 mb-3">
+                <div className="h-7 w-7 rounded-md bg-surface-3" />
+                <div className="h-4 w-24 rounded bg-surface-3" />
+              </div>
+              <div className="h-3 w-3/4 rounded bg-surface-3 mb-2" />
+              <div className="h-3 w-1/2 rounded bg-surface-3" />
+            </div>
+          ))}
+        </div>
+      </div>
+    }>
+      <IntegrationsContent />
+    </Suspense>
+  )
+}
+
+function IntegrationsContent() {
   const { workspace } = useWorkspace()
   const supabase = createClient()
+  const searchParams = useSearchParams()
 
   const [integrations, setIntegrations] = useState<Integration[]>([])
   const [loading, setLoading] = useState(true)
   const [view, setView] = useState<ViewFilter>("all")
   const [connecting, setConnecting] = useState<string | null>(null)
   const [disconnecting, setDisconnecting] = useState<string | null>(null)
+  const [stripeModalOpen, setStripeModalOpen] = useState(false)
+
+  // Handle OAuth success / error query params
+  useEffect(() => {
+    const connected = searchParams.get('connected')
+    const error = searchParams.get('error')
+    if (connected) toastSuccess(`${connected} connected successfully`)
+    if (error === 'oauth_failed') toastError('OAuth connection failed. Try again.')
+  }, [searchParams])
 
   const fetchIntegrations = useCallback(async () => {
     const { data } = await supabase
@@ -2209,16 +2332,32 @@ export default function IntegrationsPage() {
 
   async function connectProvider(provider: string) {
     if (!workspace?.id) return
-    setConnecting(provider)
 
-    // Simulated OAuth flow — inserts integration record
-    const { error } = await supabase.from('integrations').insert({
+    // OAuth providers → redirect to authorization endpoint
+    if (OAUTH_PROVIDERS.has(provider)) {
+      setConnecting(provider)
+      window.location.href = `/api/oauth/authorize?provider=${provider}`
+      return
+    }
+
+    // Stripe → open API key modal
+    if (API_KEY_PROVIDERS.has(provider)) {
+      setStripeModalOpen(true)
+      return
+    }
+
+    // Fallback for providers without OAuth yet (demo connect)
+    setConnecting(provider)
+    const { error } = await supabase.from('integrations').upsert({
       workspace_id: workspace.id,
       provider,
       status: 'active',
       account_label: `demo@${provider}.com`,
       scopes: ['read', 'write'],
       connected_by: workspace.id,
+      connected_at: new Date().toISOString(),
+    }, {
+      onConflict: 'workspace_id,provider',
     })
 
     if (error) {
@@ -2226,6 +2365,7 @@ export default function IntegrationsPage() {
     } else {
       toastSuccess(`${provider} connected successfully`)
       fetchIntegrations()
+      await supabase.rpc('complete_setup_step', { p_step: 'integration_connected' })
     }
     setConnecting(null)
   }
@@ -2253,8 +2393,23 @@ export default function IntegrationsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-[60vh]">
-        <Loader2 className="h-6 w-6 animate-spin text-text-tertiary" />
+      <div className="flex flex-col gap-5 p-6">
+        <div className="flex items-center gap-2">
+          <Plug className="h-5 w-5 text-amber" />
+          <h1 className="text-xl font-semibold text-text-primary">Integrations</h1>
+        </div>
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="animate-pulse rounded-lg border border-border-subtle bg-surface-1 p-4">
+              <div className="flex items-center gap-2.5 mb-3">
+                <div className="h-7 w-7 rounded-md bg-surface-3" />
+                <div className="h-4 w-24 rounded bg-surface-3" />
+              </div>
+              <div className="h-3 w-3/4 rounded bg-surface-3 mb-2" />
+              <div className="h-3 w-1/2 rounded bg-surface-3" />
+            </div>
+          ))}
+        </div>
       </div>
     )
   }
@@ -2289,6 +2444,16 @@ export default function IntegrationsPage() {
         ))}
       </div>
 
+      {/* Empty state when no integrations connected yet (on the connected tab) */}
+      {view === 'connected' && connectedProviders.size === 0 && (
+        <EmptyState
+          icon={Plug}
+          iconColor="text-amber"
+          headline="No integrations connected"
+          description="Connect your first tool to give agents access to your apps."
+        />
+      )}
+
       {/* Integration grid by category */}
       {categories.map(category => {
         const providers = filteredProviders.filter(p => p.category === category)
@@ -2302,6 +2467,8 @@ export default function IntegrationsPage() {
                 const integration = integrations.find(i => i.provider === p.provider && i.status === 'active')
                 const isConnecting = connecting === p.provider
                 const isDisconnecting = disconnecting === integration?.id
+                const isOAuth = OAUTH_PROVIDERS.has(p.provider)
+                const isApiKey = API_KEY_PROVIDERS.has(p.provider)
 
                 return (
                   <div key={p.provider}
@@ -2329,14 +2496,17 @@ export default function IntegrationsPage() {
                       ) : (
                         <button onClick={() => connectProvider(p.provider)} disabled={isConnecting}
                           className="flex items-center gap-1 rounded-md bg-amber px-2.5 py-1 text-[11px] font-semibold text-primary-foreground hover:bg-amber-hover transition-colors disabled:opacity-50">
-                          {isConnecting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
-                          Connect
+                          {isConnecting ? <Loader2 className="h-3 w-3 animate-spin" /> : isApiKey ? <Key className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
+                          {isApiKey ? 'Add Key' : 'Connect'}
                         </button>
                       )}
                     </div>
                     <p className="text-[11px] leading-relaxed text-text-tertiary">{p.description}</p>
                     {isConnected && integration && (
                       <div className="text-[10px] text-text-tertiary border-t border-border-subtle pt-2">
+                        {integration.account_label && (
+                          <span className="text-text-secondary">{integration.account_label} · </span>
+                        )}
                         Connected <TimeAgo date={integration.connected_at || integration.last_used_at} />
                       </div>
                     )}
@@ -2347,6 +2517,16 @@ export default function IntegrationsPage() {
           </div>
         )
       })}
+
+      {/* Stripe API Key Modal */}
+      <StripeKeyModal
+        open={stripeModalOpen}
+        onClose={() => setStripeModalOpen(false)}
+        onConnected={() => {
+          setStripeModalOpen(false)
+          fetchIntegrations()
+        }}
+      />
     </div>
   )
 }
@@ -2359,6 +2539,7 @@ import { AppSidebar } from "@/components/app-sidebar"
 import { CommandPalette } from "@/components/command-palette"
 import { NotificationBell } from "@/components/notification-bell"
 import { WorkspaceProvider } from "@/lib/hooks/use-workspace"
+import { TutorialOverlayClient } from "@/components/onboarding/TutorialOverlayClient"
 import { Toaster } from "sonner"
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -2381,6 +2562,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </main>
         </div>
         <CommandPalette />
+        <TutorialOverlayClient />
       </div>
       <Toaster theme="dark" position="bottom-right" richColors />
     </WorkspaceProvider>
@@ -2394,12 +2576,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 import { useWorkspace } from "@/lib/hooks/use-workspace"
 import { toastSuccess, toastError } from "@/lib/supabase/errors"
 import {
-  User, Building2, Shield, Loader2, Save, Trash2,
+  User, Building2, Shield, Loader2, Save, Trash2, RotateCcw,
 } from "lucide-react"
 
 type SettingsTab = "profile" | "workspace" | "security"
@@ -2407,6 +2590,7 @@ type SettingsTab = "profile" | "workspace" | "security"
 export default function SettingsPage() {
   const { workspace, profile, refetch: refreshWorkspace } = useWorkspace()
   const supabase = createClient()
+  const router = useRouter()
 
   const [tab, setTab] = useState<SettingsTab>("profile")
   const [saving, setSaving] = useState(false)
@@ -2521,6 +2705,7 @@ export default function SettingsPage() {
 
       {/* Profile Tab */}
       {tab === 'profile' && (
+        <div className="flex flex-col gap-5">
         <form onSubmit={saveProfile} className="flex flex-col gap-5">
           <fieldset className="flex flex-col gap-4 rounded-lg border border-border-subtle bg-surface-1 p-4">
             <legend className="text-[13px] font-semibold text-text-primary px-1">Profile Information</legend>
@@ -2559,6 +2744,33 @@ export default function SettingsPage() {
             </button>
           </div>
         </form>
+
+        {/* Restart Tutorial */}
+        <fieldset className="flex flex-col gap-3 rounded-lg border border-border-subtle bg-surface-1 p-4">
+          <legend className="text-[13px] font-semibold text-text-primary px-1">Onboarding</legend>
+          <p className="text-[12px] text-text-secondary">Restart the guided tutorial to walk through setup again.</p>
+          <button
+            type="button"
+            onClick={async () => {
+              if (!profile) return
+              await supabase
+                .from('profiles')
+                .update({
+                  onboarding_step: 0,
+                  onboarding_completed: false,
+                  onboarding_dismissed: false,
+                })
+                .eq('id', profile.id)
+              toastSuccess('Tutorial restarted')
+              refreshWorkspace()
+              router.refresh()
+            }}
+            className="flex items-center gap-1.5 self-start rounded-md border border-border-base bg-surface-2 px-3 py-1.5 text-[12px] font-medium text-text-secondary hover:text-text-primary transition-colors"
+          >
+            <RotateCcw className="h-3.5 w-3.5" /> Restart Tutorial
+          </button>
+        </fieldset>
+        </div>
       )}
 
       {/* Workspace Tab */}
@@ -2853,6 +3065,245 @@ export async function GET() {
   const supabase = await createClient()
   await supabase.from('workspaces').select('id').limit(1)
   return Response.json({ ok: true, ts: new Date().toISOString() })
+}
+
+]]>
+</file>
+<file path="app/api/oauth/authorize/route.ts">
+<![CDATA[
+import { NextResponse } from 'next/server'
+
+const OAUTH_CONFIGS: Record<string, {
+  authUrl: string
+  clientId: string
+  scope: string
+  extraParams?: Record<string, string>
+}> = {
+  gmail: {
+    authUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
+    clientId: process.env.GOOGLE_CLIENT_ID!,
+    scope: 'https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/gmail.readonly',
+    extraParams: { access_type: 'offline', prompt: 'consent' },
+  },
+  slack: {
+    authUrl: 'https://slack.com/oauth/v2/authorize',
+    clientId: process.env.SLACK_CLIENT_ID!,
+    scope: 'channels:read,chat:write,files:write,users:read',
+  },
+  hubspot: {
+    authUrl: 'https://app.hubspot.com/oauth/authorize',
+    clientId: process.env.HUBSPOT_CLIENT_ID!,
+    scope: 'crm.objects.contacts.read crm.objects.contacts.write crm.objects.deals.read crm.objects.deals.write',
+  },
+  github: {
+    authUrl: 'https://github.com/login/oauth/authorize',
+    clientId: process.env.GITHUB_CLIENT_ID!,
+    scope: 'repo issues:write',
+  },
+  linear: {
+    authUrl: 'https://linear.app/oauth/authorize',
+    clientId: process.env.LINEAR_CLIENT_ID!,
+    scope: 'read write',
+  },
+  notion: {
+    authUrl: 'https://api.notion.com/v1/oauth/authorize',
+    clientId: process.env.NOTION_CLIENT_ID!,
+    scope: '',
+    extraParams: { response_type: 'code', owner: 'user' },
+  },
+}
+
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url)
+  const provider = searchParams.get('provider')
+  if (!provider || !OAUTH_CONFIGS[provider]) {
+    return NextResponse.json({ error: 'Unknown provider' }, { status: 400 })
+  }
+
+  const config = OAUTH_CONFIGS[provider]
+  const params = new URLSearchParams({
+    client_id: config.clientId,
+    redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL}/api/oauth/callback?provider=${provider}`,
+    scope: config.scope,
+    response_type: 'code',
+    state: provider, // In production: sign this with a secret + store session
+    ...config.extraParams,
+  })
+
+  return NextResponse.redirect(`${config.authUrl}?${params}`)
+}
+
+]]>
+</file>
+<file path="app/api/oauth/callback/route.ts">
+<![CDATA[
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
+import { NextResponse } from 'next/server'
+
+const TOKEN_ENDPOINTS: Record<string, string> = {
+  gmail: 'https://oauth2.googleapis.com/token',
+  slack: 'https://slack.com/api/oauth.v2.access',
+  hubspot: 'https://api.hubapi.com/oauth/v1/token',
+  github: 'https://github.com/login/oauth/access_token',
+  linear: 'https://api.linear.app/oauth/token',
+  notion: 'https://api.notion.com/v1/oauth/token',
+}
+
+const CLIENT_CREDENTIALS: Record<string, { id: string; secret: string }> = {
+  gmail: { id: process.env.GOOGLE_CLIENT_ID!, secret: process.env.GOOGLE_CLIENT_SECRET! },
+  slack: { id: process.env.SLACK_CLIENT_ID!, secret: process.env.SLACK_CLIENT_SECRET! },
+  hubspot: { id: process.env.HUBSPOT_CLIENT_ID!, secret: process.env.HUBSPOT_CLIENT_SECRET! },
+  github: { id: process.env.GITHUB_CLIENT_ID!, secret: process.env.GITHUB_CLIENT_SECRET! },
+  linear: { id: process.env.LINEAR_CLIENT_ID!, secret: process.env.LINEAR_CLIENT_SECRET! },
+  notion: { id: process.env.NOTION_CLIENT_ID!, secret: process.env.NOTION_CLIENT_SECRET! },
+}
+
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url)
+  const provider = searchParams.get('provider')!
+  const code = searchParams.get('code')!
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || ''
+
+  if (!code || !provider) {
+    return NextResponse.redirect(`${appUrl}/integrations?error=oauth_failed`)
+  }
+
+  const creds = CLIENT_CREDENTIALS[provider]
+  const tokenEndpoint = TOKEN_ENDPOINTS[provider]
+
+  if (!creds || !tokenEndpoint) {
+    return NextResponse.redirect(`${appUrl}/integrations?error=oauth_failed&provider=${provider}`)
+  }
+
+  try {
+    // Exchange code for tokens
+    const tokenRes = await fetch(tokenEndpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Accept': 'application/json',
+        // Notion requires Basic auth
+        ...(provider === 'notion' ? {
+          'Authorization': `Basic ${Buffer.from(`${creds.id}:${creds.secret}`).toString('base64')}`
+        } : {}),
+      },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        code,
+        redirect_uri: `${appUrl}/api/oauth/callback?provider=${provider}`,
+        client_id: creds.id,
+        client_secret: creds.secret,
+      }),
+    })
+
+    const tokenData = await tokenRes.json()
+
+    if (!tokenData.access_token && !tokenData.authed_user?.access_token) {
+      throw new Error(`Token exchange failed: ${JSON.stringify(tokenData)}`)
+    }
+
+    const accessToken = tokenData.access_token ?? tokenData.authed_user?.access_token
+    const refreshToken = tokenData.refresh_token ?? null
+    const expiresIn = tokenData.expires_in ?? null
+    const accountLabel = await getAccountLabel(provider, accessToken, tokenData)
+
+    // Save to Supabase
+    const cookieStore = await cookies()
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() { return cookieStore.getAll() },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options))
+          },
+        },
+      }
+    )
+
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.redirect(`${appUrl}/login`)
+    }
+
+    const { data: workspaceId } = await supabase.rpc('my_workspace_id')
+
+    await supabase.from('integrations').upsert({
+      workspace_id: workspaceId,
+      provider,
+      status: 'active',
+      access_token: accessToken,
+      refresh_token: refreshToken,
+      token_expires_at: expiresIn
+        ? new Date(Date.now() + expiresIn * 1000).toISOString()
+        : null,
+      account_label: accountLabel,
+      scopes: extractScopes(provider, tokenData),
+      connected_by: user.id,
+      connected_at: new Date().toISOString(),
+      metadata: { raw: tokenData },
+    }, { onConflict: 'workspace_id,provider' })
+
+    return NextResponse.redirect(
+      `${appUrl}/integrations?connected=${provider}`
+    )
+  } catch (err) {
+    console.error(`OAuth callback error for ${provider}:`, err)
+    return NextResponse.redirect(
+      `${appUrl}/integrations?error=oauth_failed&provider=${provider}`
+    )
+  }
+}
+
+async function getAccountLabel(provider: string, token: string, data: Record<string, unknown>): Promise<string> {
+  try {
+    if (provider === 'gmail') {
+      const res = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const user = await res.json()
+      return user.email ?? 'Connected account'
+    }
+    if (provider === 'slack') {
+      const team = data.team as Record<string, unknown> | undefined
+      const authedUser = data.authed_user as Record<string, unknown> | undefined
+      return (team?.name as string) ?? (authedUser?.id as string) ?? 'Slack workspace'
+    }
+    if (provider === 'github') {
+      const res = await fetch('https://api.github.com/user', {
+        headers: { Authorization: `Bearer ${token}`, 'User-Agent': 'OpsConductor' },
+      })
+      const user = await res.json()
+      return user.login ?? 'GitHub account'
+    }
+    if (provider === 'notion') {
+      const owner = data.owner as Record<string, unknown> | undefined
+      const ownerUser = owner?.user as Record<string, unknown> | undefined
+      return (ownerUser?.name as string) ?? (data.workspace_name as string) ?? 'Notion workspace'
+    }
+    if (provider === 'linear') {
+      const res = await fetch('https://api.linear.app/graphql', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: '{ viewer { name email } }' }),
+      })
+      const { data: d } = await res.json()
+      return d?.viewer?.email ?? 'Linear account'
+    }
+  } catch {
+    // Fall through to default
+  }
+  return `${provider} account`
+}
+
+function extractScopes(provider: string, data: Record<string, unknown>): string[] {
+  if (provider === 'slack') return (data.scope as string)?.split(',') ?? []
+  if (provider === 'github') return (data.scope as string)?.split(',') ?? []
+  return []
 }
 
 ]]>
@@ -5742,21 +6193,29 @@ export default function SignupPage() {
     setLoading(true)
     setMessage(null)
 
-    // Sign up with email — sends a confirmation magic link
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         emailRedirectTo: `${window.location.origin}/auth/callback`,
-        data: { workspace_name: workspace },
+        data: { workspace_name: workspace, full_name: workspace },
       },
     })
 
     if (error) {
       setMessage({ type: "error", text: error.message })
-    } else {
-      setMessage({ type: "success", text: "Check your email to confirm your account!" })
+      setLoading(false)
+      return
     }
+
+    // If email confirmation is disabled, session exists immediately
+    if (data.session) {
+      window.location.href = "/cockpit"
+      return
+    }
+
+    // Email confirmation required
+    setMessage({ type: "success", text: "Check your email to confirm your account!" })
     setLoading(false)
   }
 
@@ -5929,7 +6388,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
 <![CDATA[
 "use client"
 
-import { ChevronDown, ChevronUp } from "lucide-react"
+import { ChevronDown, ChevronUp, Activity } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useState } from "react"
 import { IntegrationLogo } from "@/components/integration-logo"
@@ -6013,8 +6472,10 @@ export function ActivityFeed({ maxItems }: { maxItems?: number }) {
         {displayed.length > 0 ? (
           displayed.map((event) => <EventRow key={event.id} event={event} />)
         ) : (
-          <div className="flex items-center justify-center py-12 text-[13px] text-text-tertiary">
-            No activity yet
+          <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
+            <Activity className="h-8 w-8 text-text-tertiary" />
+            <p className="text-[13px] font-medium text-text-primary">No activity yet</p>
+            <p className="text-[11px] text-text-secondary max-w-[200px]">Events will appear here once your agents start running.</p>
           </div>
         )}
       </div>
@@ -6072,7 +6533,7 @@ import { TimeAgo } from "@/components/time-ago"
 import { IntegrationLogo } from "@/components/integration-logo"
 import { SkeletonLoader } from "@/components/skeleton-loader"
 import { toastSuccess, toastError } from "@/lib/supabase/errors"
-import { Play, Pause } from "lucide-react"
+import { Play, Pause, Bot } from "lucide-react"
 import type { DbAgent } from "@/lib/types"
 
 export function AgentStatusPanel() {
@@ -6113,26 +6574,46 @@ export function AgentStatusPanel() {
   }, [workspace?.id])
 
   async function handleRunNow(agent: DbAgent) {
-    const res = await fetch(`/api/agents/${agent.id}/run`, { method: 'POST' })
-    if (res.ok) {
-      toastSuccess(`Agent ${agent.name} started`)
-      setAgents(prev => prev.map(a => a.id === agent.id ? { ...a, status: 'running' as const } : a))
-    } else {
-      const err = await res.json()
-      toastError(err.error || 'Failed to start agent')
+    if (!workspace) return
+    const supabase = createClient()
+
+    // Optimistic update
+    setAgents(prev => prev.map(a => a.id === agent.id ? { ...a, status: 'running' as const } : a))
+
+    const { error } = await supabase.from('agent_runs').insert({
+      agent_id: agent.id,
+      workspace_id: workspace.id,
+      status: 'running',
+      triggered_by: 'manual',
+      started_at: new Date().toISOString(),
+    })
+
+    if (error) {
+      // Rollback optimistic update
+      setAgents(prev => prev.map(a => a.id === agent.id ? { ...a, status: agent.status } : a))
+      if (error.code === 'P0040') {
+        toastError('Agent is not runnable (archived or error state).')
+      } else if (error.code === 'P0001') {
+        toastError('Monthly event quota reached. Upgrade your plan.')
+      } else {
+        toastError(error)
+      }
+      return
     }
+
+    await supabase.from('agents').update({ status: 'running', last_run_at: new Date().toISOString() }).eq('id', agent.id)
+    toastSuccess(`Agent ${agent.name} started`)
   }
 
   async function handlePause(agent: DbAgent) {
-    const newStatus = agent.status === 'running' ? 'paused' : 'idle'
-    const res = await fetch(`/api/agents/${agent.id}/status`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: newStatus }),
-    })
-    if (res.ok) {
-      toastSuccess(agent.status === 'running' ? `Agent ${agent.name} paused` : `Agent ${agent.name} resumed`)
+    const newStatus = agent.status === 'paused' ? 'idle' : 'paused'
+    const supabase = createClient()
+    const { error } = await supabase.from('agents').update({ status: newStatus }).eq('id', agent.id)
+    if (!error) {
+      toastSuccess(agent.status === 'paused' ? `Agent ${agent.name} resumed` : `Agent ${agent.name} paused`)
       setAgents(prev => prev.map(a => a.id === agent.id ? { ...a, status: newStatus as DbAgent['status'] } : a))
+    } else {
+      toastError(error)
     }
   }
 
@@ -6147,7 +6628,12 @@ export function AgentStatusPanel() {
       </div>
       <div className="space-y-0.5 p-1.5">
         {activeAgents.length === 0 ? (
-          <div className="flex items-center justify-center py-12 text-[13px] text-text-tertiary">No agents configured</div>
+          <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
+            <Bot className="h-8 w-8 text-text-tertiary" />
+            <p className="text-[13px] font-medium text-text-primary">No agents yet</p>
+            <p className="text-[11px] text-text-secondary max-w-[200px]">Create your first agent to start automating.</p>
+            <Link href="/agents/new" className="mt-1 text-[12px] font-medium text-amber hover:text-amber-hover transition-colors">Create agent →</Link>
+          </div>
         ) : (
           activeAgents.map((agent) => (
             <div key={agent.id} className="flex flex-col gap-2 rounded-md p-2.5 transition-colors hover:bg-surface-3">
@@ -6378,6 +6864,7 @@ export function AppSidebar() {
                 key={item.href}
                 href={item.href}
                 onClick={() => setMobileOpen(false)}
+                data-tour={item.label === 'Integrations' ? 'integrations-nav' : undefined}
                 className={cn(
                   "group relative flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium transition-colors",
                   isActive ? "bg-surface-3 text-text-primary" : "text-text-secondary hover:bg-surface-3 hover:text-text-primary",
@@ -6526,16 +7013,20 @@ export function ApprovalPreview() {
 
   async function handleApprove(id: string) {
     setActionLoading(id)
-    const res = await fetch(`/api/approvals/${id}/review`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ decision: 'approved' }),
+    const supabase = createClient()
+    const { error } = await supabase.rpc('review_approval', {
+      p_approval_id: id,
+      p_decision: 'approved',
+      p_note: null,
+      p_edit_content: null,
     })
-    if (res.ok) {
+    if (error) {
+      if (error.code === 'P0006') toastError('This approval has already been resolved.')
+      else if (error.code === 'P0007') toastError('This approval has expired.')
+      else toastError(error)
+    } else {
       toastSuccess('Action approved')
       setApprovals(prev => prev.filter(a => a.id !== id))
-    } else {
-      toastError('Failed to approve')
     }
     setActionLoading(null)
   }
@@ -7543,6 +8034,226 @@ export function NotificationBell() {
 
 ]]>
 </file>
+<file path="components/onboarding/TutorialOverlay.tsx">
+<![CDATA[
+'use client'
+
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
+
+const STEPS = [
+  {
+    id: 0,
+    type: 'modal' as const,
+    title: 'Welcome to OpsConductor',
+    description:
+      "You're about to get your AI agents under control. Let's connect your tools and create your first agent in under 2 minutes.",
+    cta: "Let's go →",
+    target: null,
+    navigateTo: null,
+  },
+  {
+    id: 1,
+    type: 'tooltip' as const,
+    title: 'Connect your tools',
+    description:
+      'Start by connecting at least one integration. Your agents need access to your apps to take action.',
+    cta: 'Connect now',
+    target: '[data-tour="integrations-nav"]',
+    navigateTo: '/integrations',
+  },
+  {
+    id: 2,
+    type: 'tooltip' as const,
+    title: 'Create your first agent',
+    description:
+      "Give your agent a role and tell it what to do. It'll use your connected tools to get work done.",
+    cta: 'Create agent',
+    target: '[data-tour="new-agent-button"]',
+    navigateTo: '/agents/new',
+  },
+  {
+    id: 3,
+    type: 'tooltip' as const,
+    title: 'Set approval rules',
+    description:
+      "Define what your agent can do automatically vs. what needs your review. Start with 'Always require approval' — you can relax this later.",
+    cta: 'Got it',
+    target: '[data-tour="approval-mode-field"]',
+    navigateTo: null,
+  },
+  {
+    id: 4,
+    type: 'modal' as const,
+    title: "You're all set",
+    description:
+      'Your cockpit is live. Approve or reject your first agent action from the Approvals page.',
+    cta: 'Open cockpit',
+    target: null,
+    navigateTo: '/cockpit',
+  },
+]
+
+interface TutorialOverlayProps {
+  initialStep: number
+  onComplete: () => void
+}
+
+export function TutorialOverlay({ initialStep, onComplete }: TutorialOverlayProps) {
+  const [step, setStep] = useState(initialStep)
+  const [tooltipPos, setTooltipPos] = useState({ top: 0, left: 0 })
+  const supabase = createClient()
+  const router = useRouter()
+  const current = STEPS[step] ?? STEPS[0]
+
+  useEffect(() => {
+    if (current.type === 'tooltip' && current.target) {
+      const el = document.querySelector(current.target)
+      if (el) {
+        const rect = el.getBoundingClientRect()
+        setTooltipPos({
+          top: rect.bottom + 12,
+          left: Math.max(16, Math.min(rect.left, window.innerWidth - 336)),
+        })
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+    }
+  }, [step, current])
+
+  const advance = async () => {
+    const nextStep = step + 1
+    await supabase.rpc('complete_onboarding_step', { p_step: nextStep })
+
+    if (nextStep >= STEPS.length) {
+      if (current.navigateTo) router.push(current.navigateTo)
+      onComplete()
+      return
+    }
+
+    if (current.navigateTo) {
+      router.push(current.navigateTo)
+    }
+
+    setStep(nextStep)
+  }
+
+  const dismiss = async () => {
+    await supabase.rpc('dismiss_onboarding')
+    onComplete()
+  }
+
+  if (current.type === 'modal') {
+    return (
+      <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div className="bg-surface-1 border border-border-subtle rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
+          <div className="flex justify-between items-start mb-6">
+            <div className="flex gap-1.5">
+              {STEPS.map((s, i) => (
+                <div
+                  key={s.id}
+                  className={`h-1.5 rounded-full transition-all ${
+                    i <= step ? 'w-6 bg-amber' : 'w-3 bg-surface-3'
+                  }`}
+                />
+              ))}
+            </div>
+            <button
+              onClick={dismiss}
+              className="text-text-tertiary hover:text-text-primary text-sm"
+            >
+              Skip
+            </button>
+          </div>
+          <h2 className="text-2xl font-bold text-text-primary mb-3">{current.title}</h2>
+          <p className="text-text-secondary mb-8 leading-relaxed">{current.description}</p>
+          <button
+            onClick={advance}
+            className="w-full bg-amber hover:bg-amber-hover text-primary-foreground font-semibold py-3 rounded-xl transition-colors"
+          >
+            {current.cta}
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // Tooltip type
+  return (
+    <>
+      <div className="fixed inset-0 z-[290] bg-black/40 pointer-events-none" />
+      <div
+        className="fixed z-[300] bg-surface-1 border border-amber/30 rounded-xl p-5 w-80 shadow-2xl"
+        style={{ top: tooltipPos.top, left: tooltipPos.left }}
+      >
+        <div className="flex justify-between items-start mb-2">
+          <h3 className="text-text-primary font-semibold">{current.title}</h3>
+          <button
+            onClick={dismiss}
+            className="text-text-tertiary hover:text-text-primary text-xs"
+          >
+            ✕
+          </button>
+        </div>
+        <p className="text-text-secondary text-sm mb-4 leading-relaxed">{current.description}</p>
+        <div className="flex gap-2">
+          <button
+            onClick={advance}
+            className="flex-1 bg-amber hover:bg-amber-hover text-primary-foreground font-semibold py-2 rounded-lg text-sm transition-colors"
+          >
+            {current.cta}
+          </button>
+          <button
+            onClick={dismiss}
+            className="px-3 py-2 text-text-tertiary hover:text-text-primary text-sm rounded-lg border border-border-subtle"
+          >
+            Skip
+          </button>
+        </div>
+        <div className="flex gap-1 mt-4 justify-center">
+          {STEPS.map((s, i) => (
+            <div
+              key={s.id}
+              className={`h-1 rounded-full transition-all ${
+                i <= step ? 'w-4 bg-amber' : 'w-2 bg-surface-3'
+              }`}
+            />
+          ))}
+        </div>
+      </div>
+    </>
+  )
+}
+
+]]>
+</file>
+<file path="components/onboarding/TutorialOverlayClient.tsx">
+<![CDATA[
+'use client'
+
+import { useState } from 'react'
+import { useWorkspace } from '@/lib/hooks/use-workspace'
+import { TutorialOverlay } from './TutorialOverlay'
+
+export function TutorialOverlayClient() {
+  const { profile } = useWorkspace()
+  const [dismissed, setDismissed] = useState(false)
+
+  if (dismissed) return null
+  if (!profile) return null
+  if (profile.onboarding_completed) return null
+  if (profile.onboarding_dismissed) return null
+
+  return (
+    <TutorialOverlay
+      initialStep={profile.onboarding_step ?? 0}
+      onComplete={() => setDismissed(true)}
+    />
+  )
+}
+
+]]>
+</file>
 <file path="components/risk-badge.tsx">
 <![CDATA[
 'use client'
@@ -7629,6 +8340,166 @@ export function SkeletonLoader({ type = 'card' }: { type?: 'card' | 'table' | 'f
         </div>
       ))}
     </div>
+  )
+}
+
+]]>
+</file>
+<file path="components/stripe-key-modal.tsx">
+<![CDATA[
+"use client"
+
+import { useState, useEffect, useRef } from "react"
+import { createClient } from "@/lib/supabase/client"
+import { useWorkspace } from "@/lib/hooks/use-workspace"
+import { toastSuccess, toastError } from "@/lib/supabase/errors"
+import { Key, X, Loader2 } from "lucide-react"
+
+interface StripeKeyModalProps {
+  open: boolean
+  onClose: () => void
+  onConnected: () => void
+}
+
+export function StripeKeyModal({ open, onClose, onConnected }: StripeKeyModalProps) {
+  const { workspace, user } = useWorkspace()
+  const supabase = createClient()
+  const [apiKey, setApiKey] = useState("")
+  const [saving, setSaving] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (open) {
+      setApiKey("")
+      setTimeout(() => inputRef.current?.focus(), 100)
+    }
+  }, [open])
+
+  // Close on Escape
+  useEffect(() => {
+    if (!open) return
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose()
+    }
+    document.addEventListener("keydown", handleKey)
+    return () => document.removeEventListener("keydown", handleKey)
+  }, [open, onClose])
+
+  async function connectStripe(e: React.FormEvent) {
+    e.preventDefault()
+    const trimmed = apiKey.trim()
+
+    // Validate it starts with sk_test_ or sk_live_
+    if (!trimmed.match(/^sk_(test|live)_/)) {
+      toastError('Invalid Stripe key. Must start with sk_test_ or sk_live_')
+      return
+    }
+
+    if (!workspace?.id || !user?.id) return
+    setSaving(true)
+
+    const { error } = await supabase.from('integrations').upsert({
+      workspace_id: workspace.id,
+      provider: 'stripe',
+      status: 'active',
+      access_token: trimmed,
+      account_label: trimmed.startsWith('sk_test_') ? 'Stripe (Test mode)' : 'Stripe (Live)',
+      scopes: ['charges:read', 'customers:write', 'invoices:write'],
+      connected_by: user.id,
+      connected_at: new Date().toISOString(),
+    }, { onConflict: 'workspace_id,provider' })
+
+    setSaving(false)
+
+    if (error) {
+      toastError(error)
+    } else {
+      toastSuccess('Stripe connected')
+      await supabase.rpc('complete_setup_step', { p_step: 'integration_connected' })
+      onConnected()
+    }
+  }
+
+  if (!open) return null
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div className="fixed inset-0 z-50 bg-black/50" onClick={onClose} />
+
+      {/* Modal */}
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="relative w-full max-w-md rounded-xl border border-border-subtle bg-surface-1 p-6 shadow-2xl">
+          {/* Close button */}
+          <button
+            onClick={onClose}
+            className="absolute right-3 top-3 rounded p-1 text-text-tertiary hover:text-text-secondary transition-colors"
+          >
+            <X className="h-4 w-4" />
+          </button>
+
+          {/* Header */}
+          <div className="flex items-center gap-3 mb-4">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber/10">
+              <Key className="h-5 w-5 text-amber" />
+            </div>
+            <div>
+              <h2 className="text-[15px] font-semibold text-text-primary">Connect Stripe</h2>
+              <p className="text-[12px] text-text-secondary">
+                Enter your Stripe API secret key
+              </p>
+            </div>
+          </div>
+
+          <form onSubmit={connectStripe} className="flex flex-col gap-4">
+            <div>
+              <label className="mb-1.5 block text-[11px] font-medium text-text-secondary">
+                Secret Key
+              </label>
+              <input
+                ref={inputRef}
+                type="password"
+                value={apiKey}
+                onChange={e => setApiKey(e.target.value)}
+                placeholder="sk_test_... or sk_live_..."
+                required
+                className="h-9 w-full rounded-md border border-border-base bg-surface-2 px-3 font-mono text-[13px] text-text-primary placeholder:text-text-tertiary focus:border-amber focus:outline-none"
+              />
+              <p className="mt-1.5 text-[10px] text-text-tertiary">
+                Find your key in{" "}
+                <a
+                  href="https://dashboard.stripe.com/apikeys"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-amber hover:underline"
+                >
+                  Stripe Dashboard → API Keys
+                </a>
+                . We recommend using a restricted key with only the permissions your agents need.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 justify-end">
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-md border border-border-base bg-surface-2 px-4 py-2 text-[13px] font-medium text-text-secondary hover:text-text-primary transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={saving || !apiKey.trim()}
+                className="flex items-center gap-2 rounded-md bg-amber px-4 py-2 text-[13px] font-semibold text-primary-foreground hover:bg-amber-hover disabled:opacity-50 transition-colors"
+              >
+                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Key className="h-4 w-4" />}
+                Connect Stripe
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </>
   )
 }
 
@@ -14932,22 +15803,36 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       }
       setUser(authUser)
 
-      // Fetch profile
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', authUser.id)
-        .single()
+      // Retry loop for fresh signups — the handle_new_user trigger may need
+      // a brief moment to commit the profile row after auth.users insert.
+      let profileData = null
+      const maxAttempts = 5
+      for (let i = 0; i < maxAttempts; i++) {
+        const { data, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', authUser.id)
+          .single()
 
-      if (profileError) {
-        setError(profileError.message)
+        if (data?.workspace_id) {
+          profileData = data
+          break
+        }
+
+        if (i < maxAttempts - 1) {
+          await new Promise(r => setTimeout(r, 300 * (i + 1)))
+        }
+      }
+
+      if (!profileData) {
+        setError('Account setup failed. Please try logging out and back in, or contact support.')
         setIsLoading(false)
         return
       }
       setProfile(profileData)
 
       // Fetch workspace
-      if (profileData?.workspace_id) {
+      if (profileData.workspace_id) {
         const { data: workspaceData, error: wsError } = await supabase
           .from('workspaces')
           .select('*')
@@ -15790,14 +16675,31 @@ export function createClient() {
 import type { PostgrestError } from '@supabase/supabase-js'
 import { toast } from 'sonner'
 
+const ERROR_MAP: Record<string, string> = {
+  'P0001': 'Event quota exceeded. Upgrade your plan.',
+  'P0002': 'Invalid decision.',
+  'P0003': 'Note too long (max 2000 characters).',
+  'P0004': 'Not authenticated.',
+  'P0005': 'Record not found.',
+  'P0006': 'Already resolved.',
+  'P0007': 'Approval has expired.',
+  'P0008': 'Content too large (max 100KB).',
+  'P0010': 'Agent limit reached for your plan.',
+  'P0011': 'Notification quota exceeded.',
+  'P0030': 'You cannot change your own role.',
+  'P0040': 'Agent is not runnable (archived or error state).',
+  'P0050': 'Cannot delete workspace with running agents.',
+  'P0060': 'Too many requests. Please slow down.',
+  '23514': 'Value failed validation. Check field length and format.',
+  '23505': 'This record already exists.',
+  '23503': 'Referenced record not found.',
+  '42501': 'Permission denied.',
+  'PGRST116': 'Record not found.',
+  'PGRST301': 'Request timed out.',
+}
+
 export function handleSupabaseError(error: PostgrestError): string {
-  if (error.code === 'P0010') return 'Agent limit reached for your plan'
-  if (error.code === 'P0060') return 'Too many requests, please slow down'
-  if (error.code === '42501') return 'Permission denied'
-  if (error.code === 'PGRST116') return 'Record not found'
-  if (error.code === '23505') return 'A record with that name already exists'
-  if (error.code === '23503') return 'Referenced record not found'
-  return error.message
+  return ERROR_MAP[error.code ?? ''] ?? error.message ?? 'An unexpected error occurred.'
 }
 
 export function toastError(error: PostgrestError | Error | string) {
@@ -15999,6 +16901,8 @@ export interface Workspace {
   events_quota: number
   events_used: number
   stripe_id: string | null
+  setup_completed: boolean
+  setup_steps_done: string[]
   created_at: string
   updated_at: string
 }
@@ -16009,6 +16913,9 @@ export interface Profile {
   full_name: string
   avatar_url: string | null
   role: 'owner' | 'admin' | 'member'
+  onboarding_completed: boolean
+  onboarding_step: number
+  onboarding_dismissed: boolean
   created_at: string
   updated_at: string
 }
@@ -16027,6 +16934,7 @@ export interface DbAgent {
   integrations: string[] | null
   model: string | null
   system_prompt: string | null
+  webhook_secret: string | null
   run_count: number
   last_run_at: string | null
   created_by: string | null
@@ -16047,6 +16955,7 @@ export interface AgentRun {
   approval_count: number | null
   cost_usd: number | null
   error: string | null
+  log: Record<string, unknown>[]
   metadata: Record<string, unknown> | null
 }
 
