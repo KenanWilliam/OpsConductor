@@ -67,7 +67,15 @@ export default function ApprovalsPage() {
       p_edit_content: edited || null,
     })
     if (error) {
-      toastError(error)
+      if (error.code === 'P0002') toastError('Invalid decision value.')
+      else if (error.code === 'P0003') toastError('Review note too long (max 2000 characters).')
+      else if (error.code === 'P0004') toastError('Not authenticated. Please sign in again.')
+      else if (error.code === 'P0005') toastError('Approval record not found.')
+      else if (error.code === 'P0006') toastError('This approval has already been resolved.')
+      else if (error.code === 'P0007') toastError('This approval has expired.')
+      else if (error.code === 'P0008') toastError('Content too large (max 100KB).')
+      else if (error.code === 'P0060') toastError('Too many requests. Please slow down.')
+      else toastError(error)
     } else {
       toastSuccess(`Approval ${decision}`)
       fetchApprovals()

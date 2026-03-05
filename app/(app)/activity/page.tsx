@@ -33,6 +33,8 @@ export default function ActivityPage() {
   const [statusFilter, setStatusFilter] = useState<string>("")
   const [riskFilter, setRiskFilter] = useState<string>("")
   const [integrationFilter, setIntegrationFilter] = useState<string>("")
+  const [dateFrom, setDateFrom] = useState<string>("")
+  const [dateTo, setDateTo] = useState<string>("")
   const [showFilters, setShowFilters] = useState(false)
   const [realtimeOn, setRealtimeOn] = useState(true)
 
@@ -50,6 +52,8 @@ export default function ActivityPage() {
     if (statusFilter) query = query.eq('status', statusFilter)
     if (riskFilter) query = query.eq('risk_level', riskFilter)
     if (integrationFilter) query = query.eq('integration', integrationFilter)
+    if (dateFrom) query = query.gte('created_at', new Date(dateFrom).toISOString())
+    if (dateTo) query = query.lte('created_at', new Date(dateTo + 'T23:59:59').toISOString())
 
     const { data, count } = await query
     if (data) {
@@ -63,7 +67,7 @@ export default function ActivityPage() {
     }
     if (count !== null) setTotal(count)
     setLoading(false)
-  }, [supabase, search, statusFilter, riskFilter, integrationFilter])
+  }, [supabase, search, statusFilter, riskFilter, integrationFilter, dateFrom, dateTo])
 
   useEffect(() => {
     setLoading(true)
@@ -113,6 +117,8 @@ export default function ActivityPage() {
     if (statusFilter) query = query.eq('status', statusFilter)
     if (riskFilter) query = query.eq('risk_level', riskFilter)
     if (integrationFilter) query = query.eq('integration', integrationFilter)
+    if (dateFrom) query = query.gte('created_at', new Date(dateFrom).toISOString())
+    if (dateTo) query = query.lte('created_at', new Date(dateTo + 'T23:59:59').toISOString())
 
     const { data: allEvents } = await query
     const rows = (allEvents || []).map((e: Record<string, unknown>) => {
@@ -134,9 +140,11 @@ export default function ActivityPage() {
     setStatusFilter("")
     setRiskFilter("")
     setIntegrationFilter("")
+    setDateFrom("")
+    setDateTo("")
   }
 
-  const hasActiveFilters = search || statusFilter || riskFilter || integrationFilter
+  const hasActiveFilters = search || statusFilter || riskFilter || integrationFilter || dateFrom || dateTo
 
   return (
     <div className="flex flex-col gap-5 p-6">
@@ -205,6 +213,16 @@ export default function ActivityPage() {
             <input type="text" value={integrationFilter} onChange={e => setIntegrationFilter(e.target.value)}
               className="h-8 rounded-md border border-border-base bg-surface-2 px-2 text-[12px] text-text-primary focus:border-amber focus:outline-none"
               placeholder="e.g. slack" />
+          </div>
+          <div>
+            <label className="mb-1 block text-[10px] font-medium text-text-tertiary">From</label>
+            <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
+              className="h-8 rounded-md border border-border-base bg-surface-2 px-2 text-[12px] text-text-primary focus:border-amber focus:outline-none" />
+          </div>
+          <div>
+            <label className="mb-1 block text-[10px] font-medium text-text-tertiary">To</label>
+            <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
+              className="h-8 rounded-md border border-border-base bg-surface-2 px-2 text-[12px] text-text-primary focus:border-amber focus:outline-none" />
           </div>
         </div>
       )}

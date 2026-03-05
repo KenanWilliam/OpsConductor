@@ -48,8 +48,13 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
   const [editRole, setEditRole] = useState("")
   const [editModel, setEditModel] = useState("")
   const [editApprovalMode, setEditApprovalMode] = useState<string>("always")
+  const [editApprovalThreshold, setEditApprovalThreshold] = useState<string>("medium")
+  const [editTriggerType, setEditTriggerType] = useState<string>("manual")
+  const [editTriggerConfig, setEditTriggerConfig] = useState<Record<string, unknown>>({})
+  const [editIntegrations, setEditIntegrations] = useState<string[]>([])
   const [editPrompt, setEditPrompt] = useState("")
   const [settingsSaving, setSettingsSaving] = useState(false)
+  const [activeIntegrations, setActiveIntegrations] = useState<{ id: string; provider: string }[]>([])
 
   const fetchAgent = useCallback(async () => {
     const { data } = await supabase
@@ -64,6 +69,10 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
       setEditRole(data.role || "")
       setEditModel(data.model || "claude-sonnet-4-6")
       setEditApprovalMode(data.approval_mode || "always")
+      setEditApprovalThreshold(data.approval_threshold || "medium")
+      setEditTriggerType(data.trigger_type || "manual")
+      setEditTriggerConfig(data.trigger_config || {})
+      setEditIntegrations((data.integrations as string[]) || [])
       setEditPrompt(data.system_prompt || "")
     }
     setLoading(false)
@@ -94,6 +103,16 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
     fetchRuns()
     fetchEvents()
   }, [fetchAgent, fetchRuns, fetchEvents])
+
+  // Fetch active integrations for multi-select in settings
+  useEffect(() => {
+    if (!workspace?.id) return
+    supabase
+      .from('integrations_safe')
+      .select('id, provider')
+      .eq('status', 'active')
+      .then(({ data }) => { if (data) setActiveIntegrations(data) })
+  }, [workspace?.id, supabase])
 
   useRealtimeAgents(workspace?.id, () => fetchAgent())
 
@@ -149,7 +168,11 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
       description: editDescription.trim() || null,
       role: editRole.trim() || null,
       model: editModel,
+      trigger_type: editTriggerType,
+      trigger_config: Object.keys(editTriggerConfig).length > 0 ? editTriggerConfig : null,
       approval_mode: editApprovalMode,
+      approval_threshold: editApprovalMode === 'risk_above' ? editApprovalThreshold : null,
+      integrations: editIntegrations.length > 0 ? editIntegrations : null,
       system_prompt: editPrompt.trim() || null,
     }).eq('id', agent.id)
     setSettingsSaving(false)
@@ -245,8 +268,18 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
               <div className="flex justify-between"><span className="text-text-tertiary">Model</span><span className="text-text-primary font-mono text-[12px]">{agent.model}</span></div>
               <div className="flex justify-between"><span className="text-text-tertiary">Trigger</span><span className="text-text-primary capitalize">{agent.trigger_type}</span></div>
               <div className="flex justify-between"><span className="text-text-tertiary">Approval Mode</span><span className="text-text-primary capitalize">{(agent.approval_mode || 'always').replace('_', ' ')}</span></div>
+              {agent.approval_mode === 'risk_above' && agent.approval_threshold && (
+                <div className="flex justify-between"><span className="text-text-tertiary">Approval Threshold</span><span className="text-text-primary capitalize">{agent.approval_threshold}</span></div>
+              )}
               <div className="flex justify-between"><span className="text-text-tertiary">Status</span><span className="text-text-primary capitalize">{agent.status}</span></div>
               <div className="flex justify-between"><span className="text-text-tertiary">Created</span><span className="text-text-primary"><TimeAgo date={agent.created_at} /></span></div>
+              {agent.trigger_type === 'webhook' && (
+                <div className="flex flex-col gap-1 md:col-span-2">
+                  <span className="text-text-tertiary">Webhook URL</span>
+                  <input type="text" readOnly value={`${typeof window !== 'undefined' ? window.location.origin : ''}/api/webhooks/${agent.id}`}
+                    className="h-8 w-full rounded-md border border-border-base bg-surface-2 px-3 font-mono text-[11px] text-text-tertiary focus:outline-none cursor-text" onClick={e => (e.target as HTMLInputElement).select()} />
+                </div>
+              )}
               {agent.integrations && (
                 <div className="flex justify-between"><span className="text-text-tertiary">Integrations</span><span className="text-text-primary">{(agent.integrations as string[]).join(', ')}</span></div>
               )}
@@ -381,6 +414,60 @@ export default function AgentDetailPage({ params }: { params: Promise<{ id: stri
                 <option value="risk_above">Risk threshold</option>
               </select>
             </div>
+            {editApprovalMode === 'risk_above' && (
+              <div>
+                <label className="mb-1.5 block text-[11px] font-medium text-text-secondary">Approval Threshold</label>
+                <select value={editApprovalThreshold} onChange={e => setEditApprovalThreshold(e.target.value)} className="h-9 w-full rounded-md border border-border-base bg-surface-1 px-3 text-[13px] text-text-primary focus:border-amber focus:outline-none">
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                  <option value="critical">Critical</option>
+                </select>
+              </div>
+            )}
+            <div>
+              <label className="mb-1.5 block text-[11px] font-medium text-text-secondary">Trigger Type</label>
+              <select value={editTriggerType} onChange={e => { setEditTriggerType(e.target.value); setEditTriggerConfig({}) }} className="h-9 w-full rounded-md border border-border-base bg-surface-1 px-3 text-[13px] text-text-primary focus:border-amber focus:outline-none">
+                <option value="manual">Manual</option>
+                <option value="schedule">Schedule (Cron)</option>
+                <option value="webhook">Webhook</option>
+                <option value="event">Event-based</option>
+              </select>
+            </div>
+            {editTriggerType === 'schedule' && (
+              <div>
+                <label className="mb-1.5 block text-[11px] font-medium text-text-secondary">Cron Expression</label>
+                <input type="text" value={(editTriggerConfig as Record<string, string>).cron || ''} onChange={e => setEditTriggerConfig({ cron: e.target.value })}
+                  className="h-9 w-full rounded-md border border-border-base bg-surface-1 px-3 font-mono text-[13px] text-text-primary focus:border-amber focus:outline-none" placeholder="0 */6 * * *" />
+              </div>
+            )}
+            {editTriggerType === 'webhook' && agent && (
+              <div>
+                <label className="mb-1.5 block text-[11px] font-medium text-text-secondary">Webhook URL</label>
+                <input type="text" readOnly value={`${typeof window !== 'undefined' ? window.location.origin : ''}/api/webhooks/${agent.id}`}
+                  className="h-9 w-full rounded-md border border-border-base bg-surface-2 px-3 font-mono text-[12px] text-text-tertiary focus:outline-none cursor-text" onClick={e => (e.target as HTMLInputElement).select()} />
+              </div>
+            )}
+            {activeIntegrations.length > 0 && (
+              <div>
+                <label className="mb-1.5 block text-[11px] font-medium text-text-secondary">Integrations</label>
+                <div className="flex flex-wrap gap-2">
+                  {activeIntegrations.map(int => (
+                    <button key={int.provider} type="button"
+                      onClick={() => setEditIntegrations(prev =>
+                        prev.includes(int.provider) ? prev.filter(p => p !== int.provider) : [...prev, int.provider]
+                      )}
+                      className={cn("flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-[12px] font-medium transition-colors",
+                        editIntegrations.includes(int.provider)
+                          ? "border-amber bg-amber-dim text-amber"
+                          : "border-border-subtle bg-surface-2 text-text-secondary hover:text-text-primary"
+                      )}>
+                      {int.provider}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             <div>
               <label className="mb-1.5 block text-[11px] font-medium text-text-secondary">System Prompt</label>
               <textarea value={editPrompt} onChange={e => setEditPrompt(e.target.value)} rows={6} className="w-full rounded-md border border-border-base bg-surface-1 px-3 py-2 font-mono text-[12px] text-text-primary focus:border-amber focus:outline-none resize-none" />

@@ -18,7 +18,7 @@ export default function CockpitPage() {
       {/* Middle section — Activity + Agent Status */}
       <div className="grid grid-cols-5 gap-4">
         <div className="col-span-3">
-          <ActivityFeed />
+          <ActivityFeed maxItems={10} />
         </div>
         <div className="col-span-2">
           <AgentStatusPanel />

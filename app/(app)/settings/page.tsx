@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
@@ -12,7 +12,21 @@ import {
 
 type SettingsTab = "profile" | "workspace" | "security" | "billing"
 
+/** Wrapper with Suspense boundary for useSearchParams */
 export default function SettingsPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col gap-5 p-6 max-w-2xl">
+        <div><h1 className="text-xl font-semibold text-text-primary">Settings</h1></div>
+        <div className="h-64 animate-pulse rounded-lg border border-border-subtle bg-surface-1" />
+      </div>
+    }>
+      <SettingsContent />
+    </Suspense>
+  )
+}
+
+function SettingsContent() {
   const { workspace, profile, refetch: refreshWorkspace } = useWorkspace()
   const supabase = createClient()
   const router = useRouter()

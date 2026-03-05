@@ -74,44 +74,6 @@ const OAUTH_CONFIGS: Record<string, {
   calendly: {
     authUrl: 'https://auth.calendly.com/oauth/authorize',
     clientId: process.env.CALENDLY_CLIENT_ID!,
-    scope: ''
-    scope: 'repo issues:write',
-  },
-  salesforce: {
-    authUrl: 'https://login.salesforce.com/services/oauth2/authorize',
-    clientId: process.env.SALESFORCE_CLIENT_ID!,
-    scope: 'api refresh_token',
-  },
-  notion: {
-    authUrl: 'https://api.notion.com/v1/oauth/authorize',
-    clientId: process.env.NOTION_CLIENT_ID!,
-    scope: '',
-    extraParams: { response_type: 'code', owner: 'user' },
-  },
-  linear: {
-    authUrl: 'https://linear.app/oauth/authorize',
-    clientId: process.env.LINEAR_CLIENT_ID!,
-    scope: 'read write',
-  },
-  jira: {
-    authUrl: 'https://auth.atlassian.com/authorize',
-    clientId: process.env.JIRA_CLIENT_ID!,
-    scope: 'read:jira-work write:jira-work offline_access',
-    extraParams: { audience: 'api.atlassian.com', prompt: 'consent' },
-  },
-  intercom: {
-    authUrl: 'https://app.intercom.com/oauth',
-    clientId: process.env.INTERCOM_CLIENT_ID!,
-    scope: '',
-  },
-  airtable: {
-    authUrl: 'https://airtable.com/oauth2/v1/authorize',
-    clientId: process.env.AIRTABLE_CLIENT_ID!,
-    scope: 'data.records:read data.records:write',
-  },
-  calendly: {
-    authUrl: 'https://auth.calendly.com/oauth/authorize',
-    clientId: process.env.CALENDLY_CLIENT_ID!,
     scope: '',
   },
 }
