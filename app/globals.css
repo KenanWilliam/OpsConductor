@@ -459,12 +459,12 @@
 
 .cmd-palette-backdrop {
   position: fixed; inset: 0; z-index: 200;
-  background: rgba(8,12,20,0.7); backdrop-filter: blur(8px);
+  background: rgba(8,12,20,0.55); backdrop-filter: blur(3px);
   animation: fadeIn 150ms ease both;
 }
-:root.light .cmd-palette-backdrop { background: rgba(244,245,247,0.7); }
+:root.light .cmd-palette-backdrop { background: rgba(244,245,247,0.55); }
 .cmd-palette {
-  position: fixed; top: 20vh; left: 50%; transform: translateX(-50%);
+  position: fixed; top: 20vh; left: 50%; transform: translateX(-50%); z-index: 201;
   width: 560px; max-height: 400px; background: var(--color-bg-surface-2);
   border: 1px solid var(--color-border-strong); border-radius: 12px;
   box-shadow: 0 24px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04);

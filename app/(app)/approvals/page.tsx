@@ -202,8 +202,9 @@ export default function ApprovalsPage() {
             return (
               <div key={approval.id} className="rounded-lg border border-border-subtle bg-surface-1 overflow-hidden">
                 {/* Header row */}
-                <button onClick={() => setExpandedId(isExpanded ? null : approval.id)}
-                  className="flex items-center justify-between gap-3 w-full p-4 text-left hover:bg-surface-2/50 transition-colors">
+                <div role="button" tabIndex={0} onClick={() => setExpandedId(isExpanded ? null : approval.id)}
+                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpandedId(isExpanded ? null : approval.id) } }}
+                  className="flex items-center justify-between gap-3 w-full p-4 text-left hover:bg-surface-2/50 transition-colors cursor-pointer">
                   <div className="flex items-center gap-3 min-w-0 flex-1">
                     {isExpanded ? <ChevronDown className="h-4 w-4 text-text-tertiary shrink-0" /> : <ChevronRight className="h-4 w-4 text-text-tertiary shrink-0" />}
                     <div className="min-w-0 flex-1">
@@ -244,7 +245,7 @@ export default function ApprovalsPage() {
                     </div>
                   )}
                   {isActing && <Loader2 className="h-4 w-4 animate-spin text-amber shrink-0" />}
-                </button>
+                </div>
 
                 {/* Expanded content */}
                 {isExpanded && (
