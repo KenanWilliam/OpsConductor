@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, Fragment } from "react"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 import { useWorkspace } from "@/lib/hooks/use-workspace"
@@ -195,9 +195,8 @@ export default function AuditLogPage() {
                 {logs.map((log) => {
                   const isExpanded = expandedId === log.id
                   return (
-                    <>
+                    <Fragment key={log.id}>
                       <tr
-                        key={log.id}
                         onClick={() => setExpandedId(isExpanded ? null : log.id)}
                         className={cn(
                           "border-b border-border-subtle last:border-0 cursor-pointer transition-colors",
@@ -245,7 +244,7 @@ export default function AuditLogPage() {
                           </td>
                         </tr>
                       )}
-                    </>
+                    </Fragment>
                   )
                 })}
               </tbody>
