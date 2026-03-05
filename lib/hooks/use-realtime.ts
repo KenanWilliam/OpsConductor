@@ -161,7 +161,17 @@ export function useRealtimeNotifications() {
     setUnreadCount(0)
   }, [profile?.id])
 
-  return { notifications, unreadCount, markAllRead, refetch: fetchNotifications }
+  const markOneRead = useCallback(async (notificationId: string) => {
+    const supabase = createClient()
+    await supabase
+      .from('notifications')
+      .update({ read: true })
+      .eq('id', notificationId)
+    setNotifications(prev => prev.map(n => n.id === notificationId ? { ...n, read: true } : n))
+    setUnreadCount(prev => Math.max(0, prev - 1))
+  }, [])
+
+  return { notifications, unreadCount, markAllRead, markOneRead, refetch: fetchNotifications }
 }
 
 /* ── Approvals realtime subscription ── */

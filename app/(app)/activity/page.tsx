@@ -102,11 +102,24 @@ export default function ActivityPage() {
     fetchEvents(next)
   }
 
-  function exportCSV() {
+  async function exportCSV() {
+    // Fetch all filtered rows (no pagination cap) for export
+    let query = supabase
+      .from('events')
+      .select('*, agents(name)')
+      .order('created_at', { ascending: false })
+
+    if (search.trim()) query = query.or(`title.ilike.%${search.trim()}%,type.ilike.%${search.trim()}%`)
+    if (statusFilter) query = query.eq('status', statusFilter)
+    if (riskFilter) query = query.eq('risk_level', riskFilter)
+    if (integrationFilter) query = query.eq('integration', integrationFilter)
+
+    const { data: allEvents } = await query
+    const rows = (allEvents || []).map((e: Record<string, unknown>) => {
+      const agentName = (e.agents as Record<string, unknown>)?.name as string || ''
+      return `"${e.created_at}","${agentName}","${e.type}","${e.integration || ''}","${e.status}","${e.risk_level}","${((e.title as string) || '').replace(/"/g, '""')}"`
+    })
     const header = 'Time,Agent,Type,Integration,Status,Risk,Title'
-    const rows = events.map(e =>
-      `"${e.created_at}","${e.agent_name || ''}","${e.type}","${e.integration || ''}","${e.status}","${e.risk_level}","${(e.title || '').replace(/"/g, '""')}"`
-    )
     const blob = new Blob([header + '\n' + rows.join('\n')], { type: 'text/csv' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')

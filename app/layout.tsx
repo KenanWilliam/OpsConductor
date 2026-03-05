@@ -18,18 +18,18 @@ const ibmPlexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'OpsConductor — AI Agent Command Center',
+  title: 'OpsConductor',
   description: 'The command center for AI-powered business operations. Monitor, approve, and orchestrate your AI agents from one cockpit.',
   metadataBase: new URL('https://opsconductor.kenanwilliam.dev'),
   openGraph: {
-    title: 'OpsConductor — AI Agent Command Center',
+    title: 'OpsConductor',
     description: 'Your agents run. You stay in control. The command center for AI agent orchestration.',
     siteName: 'OpsConductor',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'OpsConductor — AI Agent Command Center',
+    title: 'OpsConductor',
     description: 'Your agents run. You stay in control.',
   },
   icons: {
@@ -37,12 +37,6 @@ export const metadata: Metadata = {
       {
         url: '/icon.svg',
         type: 'image/svg+xml',
-        media: '(prefers-color-scheme: dark)',
-      },
-      {
-        url: '/icon-light.svg',
-        type: 'image/svg+xml',
-        media: '(prefers-color-scheme: light)',
       },
     ],
     apple: '/favicon.svg',
@@ -61,7 +55,7 @@ export default function RootLayout({
           attribute="class"
           defaultTheme="dark"
           storageKey="opsc-theme"
-          enableSystem={false}
+          enableSystem
           disableTransitionOnChange={false}
         >
           {children}

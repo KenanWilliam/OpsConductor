@@ -14,6 +14,7 @@ import {
   ChevronRight,
   Sun,
   Moon,
+  Monitor,
   User,
   CreditCard,
   LogOut,
@@ -22,7 +23,7 @@ import {
   X,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { useTheme } from "next-themes"
 import { useWorkspace } from "@/lib/hooks/use-workspace"
 import { useRealtimePendingCount } from "@/lib/hooks/use-realtime"
@@ -42,93 +43,36 @@ const secondaryNav = [
   { label: "Audit Log", href: "/audit", icon: FileText },
 ]
 
-/* ── User Popover ─────────────────────────────────────────── */
-function UserPopover({ onClose }: { onClose: () => void }) {
-  const ref = useRef<HTMLDivElement>(null)
+/* ── Mode Toggle (System / Light / Dark) — icon-only ──────── */
+function ModeToggle() {
   const { theme, setTheme } = useTheme()
-  const { workspace, profile, user } = useWorkspace()
-  const router = useRouter()
-  const isDark = theme === "dark"
 
-  const name = profile?.full_name || user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User"
-  const email = user?.email || ""
-  const initials = name.split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2)
-
-  useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) onClose()
-    }
-    function handleKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose()
-    }
-    document.addEventListener("mousedown", handleClick)
-    document.addEventListener("keydown", handleKey)
-    return () => {
-      document.removeEventListener("mousedown", handleClick)
-      document.removeEventListener("keydown", handleKey)
-    }
-  }, [onClose])
-
-  async function handleSignOut() {
-    const supabase = createClient()
-    await supabase.auth.signOut()
-    router.push("/login")
-  }
-
-  const used = workspace?.events_used ?? 0
-  const limit = workspace?.events_quota ?? 1000
-  const pct = limit > 0 ? Math.round((used / limit) * 100) : 0
+  const modes = [
+    { key: "system", icon: Monitor, label: "System" },
+    { key: "light", icon: Sun, label: "Light" },
+    { key: "dark", icon: Moon, label: "Dark" },
+  ] as const
 
   return (
-    <div
-      ref={ref}
-      className="user-popover absolute bottom-full left-2 right-2 mb-2 rounded-xl border border-border-subtle bg-surface-2 p-3 shadow-xl z-50"
-    >
-      <div className="mb-3 flex items-center gap-2.5">
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber/20 text-xs font-semibold text-amber">
-          {initials}
-        </div>
-        <div className="flex flex-col">
-          <span className="text-sm font-medium text-text-primary">{name}</span>
-          <span className="font-mono text-[11px] text-text-tertiary">{email}</span>
-        </div>
-      </div>
-
-      <div className="mb-3 rounded-lg bg-surface-1 p-2.5">
-        <div className="mb-1.5 flex items-center justify-between">
-          <span className="text-[11px] font-medium text-text-secondary">Events this month</span>
-          <span className="font-mono text-[11px] text-text-tertiary">{pct}%</span>
-        </div>
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-3">
-          <div className="h-full rounded-full bg-amber transition-all duration-500" style={{ width: `${Math.min(pct, 100)}%` }} />
-        </div>
-        <div className="mt-1 flex items-center justify-between">
-          <span className="font-mono text-[10px] text-text-tertiary">{used.toLocaleString()} / {limit.toLocaleString()}</span>
-          <span className="text-[10px] text-amber capitalize">{workspace?.plan || 'Free'} Plan</span>
-        </div>
-      </div>
-
-      <div className="space-y-0.5">
-        <Link href="/settings" onClick={onClose} className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary">
-          <User className="h-3.5 w-3.5" /> Profile
-        </Link>
-        <Link href="/settings" onClick={onClose} className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary">
-          <CreditCard className="h-3.5 w-3.5" /> Billing
-        </Link>
-      </div>
-
-      <div className="my-2 border-t border-border-subtle" />
-
-      <button onClick={() => setTheme(isDark ? "light" : "dark")} className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary">
-        {isDark ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
-        {isDark ? "Light mode" : "Dark mode"}
-      </button>
-
-      <div className="my-2 border-t border-border-subtle" />
-
-      <button onClick={handleSignOut} className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary">
-        <LogOut className="h-3.5 w-3.5" /> Sign out
-      </button>
+    <div className="flex items-center gap-0.5 rounded-md bg-surface-2 dark:bg-[#0B1018] p-0.5">
+      {modes.map((m) => {
+        const active = theme === m.key
+        return (
+          <button
+            key={m.key}
+            onClick={() => setTheme(m.key)}
+            className={cn(
+              "flex items-center justify-center rounded-md p-1.5 transition-all",
+              active
+                ? "bg-surface-3 dark:bg-[#1C2535] text-text-primary dark:text-white shadow-sm"
+                : "text-text-tertiary dark:text-[#9CA3AF] hover:text-text-primary dark:hover:text-white"
+            )}
+            title={m.label}
+          >
+            <m.icon className="h-3.5 w-3.5" />
+          </button>
+        )
+      })}
     </div>
   )
 }
@@ -136,19 +80,95 @@ function UserPopover({ onClose }: { onClose: () => void }) {
 /* ── App Sidebar ──────────────────────────────────────────── */
 export function AppSidebar() {
   const pathname = usePathname()
+  const router = useRouter()
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
-  const [popoverOpen, setPopoverOpen] = useState(false)
+  const [open, setOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
   const { workspace, profile, user } = useWorkspace()
   const pendingCount = useRealtimePendingCount()
 
   const name = profile?.full_name || user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User"
   const initials = name.split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2)
+  const email = user?.email || ""
+
+  const used = workspace?.events_used ?? 0
+  const limit = workspace?.events_quota ?? 1000
+  const pct = limit > 0 ? Math.round((used / limit) * 100) : 0
+
+  // Click-outside handler — closes popover only when clicking outside both trigger and menu
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (
+        menuRef.current && !menuRef.current.contains(e.target as Node) &&
+        triggerRef.current && !triggerRef.current.contains(e.target as Node)
+      ) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", handler)
+    return () => document.removeEventListener("mousedown", handler)
+  }, [])
+
+  // Escape key closes
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false)
+    }
+    document.addEventListener("keydown", handler)
+    return () => document.removeEventListener("keydown", handler)
+  }, [])
+
+  // Calculate popover position from trigger
+  const [popoverStyle, setPopoverStyle] = useState<React.CSSProperties>({
+    position: "fixed" as const,
+    zIndex: 9999,
+    minWidth: 260,
+    visibility: "hidden" as const,
+  })
+
+  const updatePopoverPosition = useCallback(() => {
+    if (!triggerRef.current) return
+    const rect = triggerRef.current.getBoundingClientRect()
+    setPopoverStyle({
+      position: "fixed" as const,
+      bottom: window.innerHeight - rect.top + 8,
+      left: rect.left,
+      zIndex: 9999,
+      minWidth: 260,
+      visibility: "visible" as const,
+    })
+  }, [])
+
+  // Calculate position immediately on open and track resize/scroll
+  useEffect(() => {
+    if (open) {
+      // Compute position synchronously on the next frame to avoid displacement
+      requestAnimationFrame(updatePopoverPosition)
+      window.addEventListener("resize", updatePopoverPosition)
+      window.addEventListener("scroll", updatePopoverPosition, true)
+      return () => {
+        window.removeEventListener("resize", updatePopoverPosition)
+        window.removeEventListener("scroll", updatePopoverPosition, true)
+      }
+    }
+  }, [open, updatePopoverPosition])
+
+  async function handleSignOut() {
+    setOpen(false)
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    router.push("/login")
+  }
 
   const sidebarContent = (
     <>
       {/* Logo */}
-      <div className={cn("flex items-center gap-2 border-b border-border-subtle px-4 py-4", collapsed && "justify-center px-2")}>
+      <div className={cn(
+        "flex items-center gap-2 border-b border-border-subtle py-4 px-4",
+        collapsed && "justify-center"
+      )}>
         <img src="/icon.svg" alt="OpsConductor" className="h-7 w-7 shrink-0 hidden dark:block" />
         <img src="/icon-light.svg" alt="OpsConductor" className="h-7 w-7 shrink-0 dark:hidden block" />
         {!collapsed && (
@@ -232,9 +252,7 @@ export function AppSidebar() {
       </nav>
 
       {/* Footer */}
-      <div className="relative border-t border-border-subtle px-2 py-3">
-        {popoverOpen && !collapsed && <UserPopover onClose={() => setPopoverOpen(false)} />}
-
+      <div className="border-t border-border-subtle px-2 py-3">
         <button
           onClick={() => setCollapsed(!collapsed)}
           className={cn("hidden sm:flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-sm text-text-tertiary transition-colors hover:text-text-secondary", collapsed && "justify-center px-2")}
@@ -243,7 +261,8 @@ export function AppSidebar() {
         </button>
 
         <button
-          onClick={() => setPopoverOpen((v) => !v)}
+          ref={triggerRef}
+          onClick={() => setOpen((v) => !v)}
           className={cn("mt-2 flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 transition-colors hover:bg-surface-3", collapsed && "justify-center px-2")}
         >
           <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-amber/20 text-[11px] font-semibold text-amber">{initials}</div>
@@ -263,6 +282,76 @@ export function AppSidebar() {
 
   return (
     <>
+      {/* ── Floating popover (portalled to body via fixed positioning) ── */}
+      {open && (
+        <div ref={menuRef} style={popoverStyle} className="rounded-xl border border-border-base bg-popover p-2 shadow-2xl">
+          {/* User info header */}
+          <div className="mb-2 flex items-center gap-2.5 px-3 py-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber/20 text-xs font-semibold text-amber">
+              {initials}
+            </div>
+            <div className="flex flex-col">
+              <span className="text-sm font-medium text-text-primary">{name}</span>
+              <span className="font-mono text-[11px] text-text-tertiary">{email}</span>
+            </div>
+          </div>
+
+          {/* Monthly Events */}
+          <div className="mx-1 mb-2 rounded-lg bg-surface-2 p-2.5">
+            <div className="mb-1.5 flex items-center justify-between">
+              <span className="text-[11px] font-medium text-text-tertiary">Monthly Events</span>
+              <span className="font-mono text-[11px] text-text-tertiary">{pct}%</span>
+            </div>
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-3">
+              <div className="h-full rounded-full bg-amber transition-all duration-500" style={{ width: `${Math.min(pct, 100)}%` }} />
+            </div>
+            <div className="mt-1 flex items-center justify-between">
+              <span className="font-mono text-[10px] text-text-tertiary">{used.toLocaleString()} / {limit.toLocaleString()}</span>
+              <span className="text-[10px] text-amber capitalize">{workspace?.plan || 'Free'} Plan</span>
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div className="my-1 border-t border-border-subtle" />
+
+          {/* Profile & Settings */}
+          <button
+            onClick={() => { setOpen(false); router.push("/settings") }}
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary cursor-pointer"
+          >
+            <User className="h-4 w-4" />
+            Profile & Settings
+          </button>
+
+          {/* Billing */}
+          <button
+            onClick={() => { setOpen(false); router.push("/settings?tab=billing") }}
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-text-secondary transition-colors hover:bg-surface-3 hover:text-text-primary cursor-pointer"
+          >
+            <CreditCard className="h-4 w-4" />
+            Billing
+          </button>
+
+          {/* Mode toggle — Title left, toggles right */}
+          <div className="flex items-center justify-between px-3 py-2.5">
+            <span className="text-sm text-text-secondary">Theme</span>
+            <ModeToggle />
+          </div>
+
+          {/* Divider */}
+          <div className="my-1 border-t border-border-subtle" />
+
+          {/* Sign Out */}
+          <button
+            onClick={handleSignOut}
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-red-400 transition-colors hover:bg-red-500/10 hover:text-red-300 cursor-pointer"
+          >
+            <LogOut className="h-4 w-4" />
+            Sign Out
+          </button>
+        </div>
+      )}
+
       {/* Mobile hamburger */}
       <button onClick={() => setMobileOpen(true)} className="fixed left-3 top-3 z-[200] flex h-8 w-8 items-center justify-center rounded-md bg-surface-2 border border-border-subtle sm:hidden">
         <Menu className="h-4 w-4 text-text-secondary" />

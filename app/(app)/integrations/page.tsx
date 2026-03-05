@@ -10,7 +10,7 @@ import { IntegrationLogo } from "@/components/integration-logo"
 import { TimeAgo } from "@/components/time-ago"
 import { SkeletonLoader } from "@/components/skeleton-loader"
 import { EmptyState } from "@/components/empty-state"
-import { StripeKeyModal } from "@/components/stripe-key-modal"
+import { ApiKeyModal } from "@/components/api-key-modal"
 import type { DbIntegration } from "@/lib/types"
 type Integration = DbIntegration
 import {
@@ -20,10 +20,12 @@ import {
 /* OAuth-capable providers that redirect to /api/oauth/authorize */
 const OAUTH_PROVIDERS = new Set([
   'gmail', 'slack', 'hubspot', 'github', 'linear', 'notion',
+  'google_calendar', 'google_sheets', 'salesforce', 'jira',
+  'intercom', 'airtable', 'calendly',
 ])
 
 /* Providers that use an API-key modal instead of OAuth */
-const API_KEY_PROVIDERS = new Set(['stripe'])
+const API_KEY_PROVIDERS = new Set(['stripe', 'sendgrid', 'clearbit', 'zapier'])
 
 const ALL_PROVIDERS = [
   { provider: "slack", label: "Slack", category: "Communication", description: "Send messages, create channels, post agent updates" },
@@ -85,7 +87,8 @@ function IntegrationsContent() {
   const [view, setView] = useState<ViewFilter>("all")
   const [connecting, setConnecting] = useState<string | null>(null)
   const [disconnecting, setDisconnecting] = useState<string | null>(null)
-  const [stripeModalOpen, setStripeModalOpen] = useState(false)
+  const [apiKeyModalOpen, setApiKeyModalOpen] = useState(false)
+  const [apiKeyProvider, setApiKeyProvider] = useState<string>("stripe")
 
   // Handle OAuth success / error query params
   useEffect(() => {
@@ -118,9 +121,10 @@ function IntegrationsContent() {
       return
     }
 
-    // Stripe → open API key modal
+    // Stripe, SendGrid, Clearbit, Zapier → open API key modal
     if (API_KEY_PROVIDERS.has(provider)) {
-      setStripeModalOpen(true)
+      setApiKeyProvider(provider)
+      setApiKeyModalOpen(true)
       return
     }
 
@@ -151,7 +155,12 @@ function IntegrationsContent() {
   async function disconnectIntegration(id: string, provider: string) {
     if (!confirm(`Disconnect ${provider}? Agents using this integration will stop working.`)) return
     setDisconnecting(id)
-    const { error } = await supabase.from('integrations').update({ status: 'disconnected' }).eq('id', id)
+    const { error } = await supabase.from('integrations').update({
+      status: 'disconnected',
+      disconnected_at: new Date().toISOString(),
+      access_token: null,
+      refresh_token: null,
+    }).eq('id', id)
     if (error) {
       toastError(error)
     } else {
@@ -263,6 +272,11 @@ function IntegrationsContent() {
                               <CheckCircle className="h-3 w-3" /> Connected
                             </div>
                           )}
+                          {integration?.status === 'error' && integration.error_message && (
+                            <div className="flex items-center gap-1 text-[10px] text-red-400" title={integration.error_message}>
+                              Error: {integration.error_message.slice(0, 40)}{integration.error_message.length > 40 ? '…' : ''}
+                            </div>
+                          )}
                         </div>
                       </div>
                       {isConnected && integration ? (
@@ -296,12 +310,13 @@ function IntegrationsContent() {
         )
       })}
 
-      {/* Stripe API Key Modal */}
-      <StripeKeyModal
-        open={stripeModalOpen}
-        onClose={() => setStripeModalOpen(false)}
+      {/* API Key Modal (Stripe, SendGrid, Clearbit, Zapier) */}
+      <ApiKeyModal
+        open={apiKeyModalOpen}
+        provider={apiKeyProvider}
+        onClose={() => setApiKeyModalOpen(false)}
         onConnected={() => {
-          setStripeModalOpen(false)
+          setApiKeyModalOpen(false)
           fetchIntegrations()
         }}
       />

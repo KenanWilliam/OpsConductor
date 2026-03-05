@@ -1,5 +1,15 @@
 <svg width="64" height="64" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <path d="M 6 24 A 18 18 0 1 1 30 42" stroke="#F59E0B" stroke-width="7" stroke-linecap="round" fill="none"/>
-  <line x1="5" y1="43" x2="43" y2="5" stroke="#F0F4F8" stroke-width="7" stroke-linecap="round"/>
-  <circle cx="43" cy="5" r="5.5" fill="#F59E0B"/>
+  <style>
+    .arc { stroke: #D97706; }
+    .rod { stroke: #0F1520; }
+    .dot { fill: #D97706; }
+    @media (prefers-color-scheme: dark) {
+      .arc { stroke: #F59E0B; }
+      .rod { stroke: #F0F4F8; }
+      .dot { fill: #F59E0B; }
+    }
+  </style>
+  <path class="arc" d="M 6 24 A 18 18 0 1 1 30 42" stroke-width="7" stroke-linecap="round" fill="none"/>
+  <line class="rod" x1="5" y1="43" x2="43" y2="5" stroke-width="7" stroke-linecap="round"/>
+  <circle class="dot" cx="43" cy="5" r="5.5"/>
 </svg>

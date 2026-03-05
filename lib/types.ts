@@ -113,16 +113,24 @@ export interface DbIntegration {
   id: string
   workspace_id: string
   provider: string
-  status: 'active' | 'disconnected' | 'error' | 'pending'
+  status: 'active' | 'disconnected' | 'error' | 'expired' | 'pending'
+  provider_user_id: string | null
+  provider_email: string | null
+  provider_workspace: string | null
   account_label: string | null
   scopes: string[] | null
   access_token: string | null
   refresh_token: string | null
   token_expires_at: string | null
+  error_message: string | null
+  last_used_at: string | null
+  last_synced_at: string | null
   metadata: Record<string, unknown> | null
   connected_by: string | null
   connected_at: string | null
-  last_used_at: string | null
+  disconnected_at: string | null
+  created_at: string
+  updated_at: string
 }
 
 export interface DbNotification {
@@ -153,9 +161,15 @@ export interface DbAuditLog {
 }
 
 export interface WorkspaceStats {
+  // New 5-metric schema from workspace_stats() RPC
+  total_agents: number
+  active_runs: number
+  pending_approvals: number
+  events_today: number
+  integrations_connected: number
+  // Legacy fields (backward compatibility)
   agents_total: number
   agents_running: number
-  pending_approvals: number
   events_this_week: number
   cost_this_week: number
   events_quota: number

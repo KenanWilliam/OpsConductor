@@ -17,7 +17,7 @@ const typeConfig: Record<string, { icon: React.ElementType; color: string; bg: s
 export function NotificationBell() {
   const [open, setOpen] = useState(false)
   const drawerRef = useRef<HTMLDivElement>(null)
-  const { notifications, unreadCount, markAllRead } = useRealtimeNotifications()
+  const { notifications, unreadCount, markAllRead, markOneRead } = useRealtimeNotifications()
 
   useEffect(() => {
     if (!open) return
@@ -78,9 +78,13 @@ export function NotificationBell() {
                   return (
                     <div
                       key={notification.id}
+                      onClick={() => !notification.read && markOneRead(notification.id)}
+                      role={!notification.read ? 'button' : undefined}
+                      tabIndex={!notification.read ? 0 : undefined}
+                      onKeyDown={(e) => { if (!notification.read && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); markOneRead(notification.id) } }}
                       className={cn(
                         "flex gap-3 border-b border-border-subtle px-4 py-3 transition-colors border-l-2",
-                        !notification.read && "bg-surface-2",
+                        !notification.read && "bg-surface-2 cursor-pointer hover:bg-surface-3",
                         config.borderColor
                       )}
                     >

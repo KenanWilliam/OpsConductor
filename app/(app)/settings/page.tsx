@@ -1,21 +1,22 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 import { useWorkspace } from "@/lib/hooks/use-workspace"
 import { toastSuccess, toastError } from "@/lib/supabase/errors"
 import {
-  User, Building2, Shield, Loader2, Save, Trash2, RotateCcw,
+  User, Building2, Shield, Loader2, Save, Trash2, RotateCcw, CreditCard,
 } from "lucide-react"
 
-type SettingsTab = "profile" | "workspace" | "security"
+type SettingsTab = "profile" | "workspace" | "security" | "billing"
 
 export default function SettingsPage() {
   const { workspace, profile, refetch: refreshWorkspace } = useWorkspace()
   const supabase = createClient()
   const router = useRouter()
+  const searchParams = useSearchParams()
 
   const [tab, setTab] = useState<SettingsTab>("profile")
   const [saving, setSaving] = useState(false)
@@ -43,6 +44,14 @@ export default function SettingsPage() {
       setWsSlug(workspace.slug || "")
     }
   }, [profile, workspace])
+
+  // Handle ?tab= query param
+  useEffect(() => {
+    const qTab = searchParams.get('tab')
+    if (qTab && ['profile', 'workspace', 'security', 'billing'].includes(qTab)) {
+      setTab(qTab as SettingsTab)
+    }
+  }, [searchParams])
 
   async function saveProfile(e: React.FormEvent) {
     e.preventDefault()
@@ -108,6 +117,7 @@ export default function SettingsPage() {
     { id: "profile" as const, label: "Profile", icon: User },
     { id: "workspace" as const, label: "Workspace", icon: Building2 },
     { id: "security" as const, label: "Security", icon: Shield },
+    { id: "billing" as const, label: "Billing", icon: CreditCard },
   ]
 
   return (
@@ -282,6 +292,52 @@ export default function SettingsPage() {
             </button>
           </div>
         </form>
+      )}
+
+      {/* Billing Tab */}
+      {tab === 'billing' && (
+        <div className="flex flex-col gap-5">
+          <fieldset className="flex flex-col gap-4 rounded-lg border border-border-subtle bg-surface-1 p-4">
+            <legend className="text-[13px] font-semibold text-text-primary px-1">Subscription</legend>
+            <div className="flex items-center gap-3">
+              <span className="text-[13px] text-text-secondary">Current Plan:</span>
+              <span className={cn("rounded-full px-2.5 py-0.5 text-[11px] font-bold capitalize",
+                workspace?.plan === 'scale' ? "bg-amber/15 text-amber" :
+                workspace?.plan === 'pro' ? "bg-blue-400/15 text-blue-400" :
+                "bg-surface-2 text-text-tertiary"
+              )}>
+                {workspace?.plan || 'free'}
+              </span>
+            </div>
+            <p className="text-[12px] text-text-secondary">
+              Manage your subscription, update payment methods, and view invoices.
+            </p>
+            <button
+              disabled
+              className="flex items-center gap-1.5 self-start rounded-md bg-amber px-4 py-2 text-[13px] font-semibold text-primary-foreground opacity-60 cursor-not-allowed transition-colors"
+            >
+              <CreditCard className="h-4 w-4" />
+              Manage Subscription
+            </button>
+            <p className="text-[10px] text-text-tertiary">Stripe billing portal coming soon</p>
+          </fieldset>
+
+          <fieldset className="flex flex-col gap-3 rounded-lg border border-border-subtle bg-surface-1 p-4">
+            <legend className="text-[13px] font-semibold text-text-primary px-1">Usage</legend>
+            <div className="flex items-center justify-between">
+              <span className="text-[12px] text-text-secondary">Monthly Events</span>
+              <span className="font-mono text-[12px] text-text-primary">
+                {(workspace?.events_used ?? 0).toLocaleString()} / {(workspace?.events_quota ?? 1000).toLocaleString()}
+              </span>
+            </div>
+            <div className="h-2 w-full overflow-hidden rounded-full bg-surface-3">
+              <div
+                className="h-full rounded-full bg-amber transition-all duration-500"
+                style={{ width: `${Math.min(((workspace?.events_used ?? 0) / (workspace?.events_quota ?? 1000)) * 100, 100)}%` }}
+              />
+            </div>
+          </fieldset>
+        </div>
       )}
     </div>
   )

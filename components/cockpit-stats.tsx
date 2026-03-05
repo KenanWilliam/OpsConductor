@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { TrendingUp, TrendingDown, DollarSign, ShieldCheck, Zap } from "lucide-react"
+import { TrendingUp, TrendingDown, DollarSign, ShieldCheck, Zap, Bot, Plug } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 import { useWorkspace } from "@/lib/hooks/use-workspace"
@@ -72,37 +72,46 @@ export function CockpitStats() {
   if (loading) return <SkeletonLoader type="card" />
 
   const s = stats || {
-    agents_total: 0, agents_running: 0, pending_approvals: 0,
+    total_agents: 0, active_runs: 0, pending_approvals: 0,
+    events_today: 0, integrations_connected: 0,
+    // Legacy fields for backward compatibility
+    agents_total: 0, agents_running: 0,
     events_this_week: 0, cost_this_week: 0, events_quota: 1000, events_used: 0
   }
 
   return (
-    <div className="grid grid-cols-4 gap-3">
+    <div className="grid grid-cols-5 gap-3">
       <StatCard
-        label="Actions This Week"
-        value={String(s.events_this_week)}
-        icon={Zap}
+        label="Total Agents"
+        value={String(s.total_agents ?? s.agents_total ?? 0)}
+        icon={Bot}
         accentColor="text-amber"
       />
       <StatCard
+        label="Active Runs"
+        value={String(s.active_runs ?? s.agents_running ?? 0)}
+        icon={Zap}
+        accentColor="text-success"
+      />
+      <StatCard
         label="Pending Approvals"
-        value={String(s.pending_approvals)}
+        value={String(s.pending_approvals ?? 0)}
         icon={ShieldCheck}
         accentColor="text-warning"
         href="/approvals"
       />
       <StatCard
-        label="Agent Cost (Week)"
-        value={`$${(s.cost_this_week ?? 0).toFixed(2)}`}
-        icon={DollarSign}
-        mono
-      />
-      <StatCard
-        label="Quota Used"
-        value={`${s.events_used} / ${s.events_quota}`}
+        label="Events Today"
+        value={String(s.events_today ?? s.events_this_week ?? 0)}
         icon={Zap}
         accentColor="text-info"
-        mono
+      />
+      <StatCard
+        label="Integrations"
+        value={String(s.integrations_connected ?? 0)}
+        icon={Plug}
+        accentColor="text-amber"
+        href="/integrations"
       />
     </div>
   )
